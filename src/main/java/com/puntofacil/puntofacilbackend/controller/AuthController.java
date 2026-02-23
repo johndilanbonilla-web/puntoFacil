@@ -1,6 +1,8 @@
 package com.puntofacil.puntofacilbackend.controller;
 
 import com.puntofacil.puntofacilbackend.dto.LoginRequest;
+import com.puntofacil.puntofacilbackend.entity.Usuario;
+import com.puntofacil.puntofacilbackend.service.UsuarioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,10 +10,20 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+    private final UsuarioService usuarioService;
 
-        // por ahora solo validamos que llegue
-        return ResponseEntity.ok("Login OK para usuario: " + request.getUsuario());
+    public AuthController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+
+        Usuario usuario = usuarioService.login(
+                request.getUsuario(),
+                request.getPassword()
+        );
+
+        return ResponseEntity.ok(usuario);
     }
 }

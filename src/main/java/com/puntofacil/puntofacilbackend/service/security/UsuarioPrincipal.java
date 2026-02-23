@@ -22,7 +22,7 @@ public class UsuarioPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return usuario.getUsuario(); // 🔥 AQUÍ ESTABA EL ERROR
+        return usuario.getUsuario(); // ✅ CORRECTO
     }
 
     @Override
