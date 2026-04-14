@@ -1,0 +1,135 @@
+<th:block xmlns:th="http://www.thymeleaf.org"
+          xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+          layout:decorate="~{layouts/main}">
+
+    <div layout:fragment="content">
+        <style>
+            .form-control-dark {
+                background: #0f172a !important;
+                border: 1px solid var(--pf-border) !important;
+                color: white !important;
+            }
+            .form-control-dark:focus {
+                border-color: var(--pf-primary) !important;
+                box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+            }
+            .card-profile {
+                background: var(--pf-card-bg) !important;
+                border: 1px solid var(--pf-border) !important;
+                border-radius: 16px;
+            }
+            .avatar-circle {
+                background: rgba(59, 130, 246, 0.1);
+                border: 2px solid rgba(59, 130, 246, 0.2);
+                color: var(--pf-primary);
+            }
+        </style>
+
+        <div class="mb-4">
+            <h4 class="fw-bold text-white mb-0">Mi Perfil</h4>
+            <p class="text-info small mb-0 opacity-75">Administra tu información personal y seguridad de cuenta.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card card-profile shadow-lg text-center p-4">
+                    <div class="avatar-circle rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-3"
+                         style="width: 80px; height: 80px; font-size: 2rem;"
+                         th:text="${#strings.substring(usuario.nombreCompleto,0,1)}">U</div>
+
+                    <h5 class="text-white fw-bold mb-1" th:text="${usuario.nombreCompleto}">Nombre del Usuario</h5>
+                    <p class="text-info small mb-3 opacity-75" th:text="'@' + ${usuario.username}">@username</p>
+
+                    <span class="badge rounded-pill bg-dark border border-secondary border-opacity-50 text-info px-3 py-2 mb-2"
+                          style="font-size: 0.75rem;" th:text="${usuario.rol}">ROL</span>
+
+                    <hr class="border-secondary border-opacity-25 my-4">
+
+                    <div class="text-start">
+                        <label class="text-white small fw-bold text-uppercase opacity-50 d-block mb-1" style="letter-spacing: 0.5px;">Estado de cuenta</label>
+                        <div th:class="${usuario.activo ? 'text-success' : 'text-danger'} + ' small fw-bold'">
+                            <i class="bi bi-patch-check-fill me-1"></i>
+                            <span th:text="${usuario.activo ? 'Verificada y Activa' : 'Inactiva'}"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card card-profile shadow-lg p-4">
+                    <h6 class="text-white fw-bold mb-4">
+                        <i class="bi bi-shield-lock me-2 text-primary"></i>Configuración de Seguridad
+                    </h6>
+
+                    <div th:if="${success}" class="alert border-0 bg-success bg-opacity-10 text-success small mb-4">
+                        <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${success}"></span>
+                    </div>
+                    <div th:if="${error}" class="alert border-0 bg-danger bg-opacity-10 text-danger small mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span>
+                    </div>
+
+                    <form th:action="@{/usuarios/perfil/actualizar-password}" method="post">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-white small fw-bold opacity-75">Contraseña Actual</label>
+                                <input type="password" name="passwordActual" class="form-control form-control-dark"
+                                       placeholder="••••••••" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold opacity-75">Nueva Contraseña</label>
+                                <input type="password" id="newPass" name="passwordNueva" class="form-control form-control-dark"
+                                       placeholder="Mínimo 8 caracteres" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-white small fw-bold opacity-75">Confirmar Nueva Contraseña</label>
+                                <input type="password" id="confirmPass" class="form-control form-control-dark"
+                                       placeholder="Repita la clave" required oninput="validarClaves()">
+                                <div id="matchMessage" class="form-text small mt-1 d-none"></div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" id="btnGuardar" class="btn btn-primary px-4 fw-bold shadow-sm" disabled>
+                                    Actualizar Credenciales
+                                </button>
+                                <div class="p-3 rounded-3 mt-3 border border-secondary border-opacity-10" style="background: rgba(15, 23, 42, 0.3);">
+                                    <p class="text-info small mb-0 opacity-75">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Al cambiar tu contraseña, se cerrarán todas las sesiones activas en otros dispositivos para garantizar la seguridad de tu cuenta.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            function validarClaves() {
+                const pass = document.getElementById('newPass').value;
+                const confirm = document.getElementById('confirmPass').value;
+                const message = document.getElementById('matchMessage');
+                const btn = document.getElementById('btnGuardar');
+
+                message.classList.remove('d-none');
+
+                if (pass === confirm && pass !== "") {
+                    message.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Las contraseñas coinciden';
+                    message.className = "form-text text-success small mt-1 fw-bold";
+                    btn.disabled = false;
+                } else if (confirm === "") {
+                    message.classList.add('d-none');
+                    btn.disabled = true;
+                } else {
+                    message.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Las contraseñas no coinciden';
+                    message.className = "form-text text-danger small mt-1 fw-bold";
+                    btn.disabled = true;
+                }
+            }
+        </script>
+    </th:block>
+</th:block>

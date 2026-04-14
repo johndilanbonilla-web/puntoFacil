@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head>
+    <title>Gestión de Caja - Punto Fácil</title>
+    <style>
+        /* --- SISTEMA DE COLORES DARK ALTO CONTRASTE --- */
+        :root {
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-border: #334155;
+            --dark-text: #f8fafc;
+            --text-muted: #cbd5e1; /* Gris claro legible */
+            --accent-green: #22c55e;
+            --accent-amber: #f59e0b;
+            --accent-blue: #38bdf8;
+            --accent-red: #ef4444;
+            --input-bg: #0f172a;
+        }
+
+        body {
+            background-color: var(--dark-bg) !important;
+            color: var(--dark-text);
+        }
+
+        .card-caja {
+            background-color: var(--dark-card) !important;
+            border: 1px solid var(--dark-border) !important;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- LEGIBILIDAD DE FILTROS --- */
+        .label-filter {
+            color: var(--accent-blue) !important;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-input {
+            background-color: var(--input-bg) !important;
+            border: 1px solid var(--dark-border) !important;
+            color: #ffffff !important;
+            border-radius: 8px;
+        }
+
+        /* --- BOTONES DE RANGO RÁPIDO --- */
+        .btn-range-quick {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--accent-blue);
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+
+        .btn-range-quick:hover {
+            background: var(--accent-blue);
+            color: var(--dark-bg);
+        }
+
+        /* --- TABLAS Y TEXTOS --- */
+        .table { color: var(--dark-text) !important; }
+
+        .table thead th {
+            color: var(--accent-blue) !important;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--dark-border) !important;
+        }
+
+        .text-muted-custom { color: var(--text-muted) !important; }
+        .text-diff-neg { color: #fca5a5 !important; }
+        .text-diff-pos { color: #86efac !important; }
+
+        .status-display {
+            padding: 2.5rem;
+            border-radius: 24px;
+            background: linear-gradient(145deg, #111827, #1e293b);
+            border: 1px solid var(--dark-border);
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container-fluid py-3">
+
+        <div class="mb-4">
+            <h2 class="fw-bold text-white d-flex align-items-center">
+                <i class="bi bi-safe2-fill me-3 text-success"></i>Control de Caja
+            </h2>
+            <p class="text-muted-custom">Supervisión y cierres de sesión en tiempo real.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-4">
+                <div class="card card-caja p-4 text-center h-100 border-0">
+                    <div id="statusBadge" class="status-display mb-4">
+                        <div class="py-5" id="spinnerCarga">
+                            <div class="spinner-border text-success" role="status"></div>
+                            <p class="mt-3 text-muted-custom fw-bold small">Sincronizando...</p>
+                        </div>
+                    </div>
+                    <div id="areaAcciones" class="px-2"></div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-8">
+                <div class="card card-caja mb-4 border-0 p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="label-filter"><i class="bi bi-funnel-fill me-1"></i>Rango de búsqueda</span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-range-quick" onclick="setRange('hoy')">Hoy</button>
+                            <button type="button" class="btn btn-range-quick" onclick="setRange('7d')">7 Días</button>
+                            <button type="button" class="btn btn-range-quick" onclick="setRange('30d')">30 Días</button>
+                            <button type="button" class="btn btn-range-quick" onclick="setRange('mes')">Mes</button>
+                        </div>
+                    </div>
+
+                    <form id="formFiltro" th:action="@{/caja/gestion}" method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="label-filter mb-2">Desde</label>
+                            <input type="date" id="fInicio" name="fInicio" th:value="${fInicio}" class="form-control filter-input">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="label-filter mb-2">Hasta</label>
+                            <input type="date" id="fFin" name="fFin" th:value="${fFin}" class="form-control filter-input">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="label-filter mb-2">Sucursal</label>
+                            <select name="sucursal" class="form-select filter-input">
+                                <option value="">Todas</option>
+                                <option th:each="suc : ${sucursales}"
+                                        th:value="${suc.idSucursal}"
+                                        th:text="${suc.nombre}"
+                                        th:selected="${suc.idSucursal == sucursalSeleccionada}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3">
+                                <i class="bi bi-search me-2"></i>BUSCAR
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card card-caja border-0 overflow-hidden">
+                    <div class="card-header bg-black bg-opacity-20 border-bottom border-secondary border-opacity-10 py-3 px-4 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-success">
+                            <i class="bi bi-journal-text me-2"></i>SESIONES DE CAJA
+                        </h6>
+                        <span class="badge bg-dark text-muted-custom" th:text="${#lists.size(sesiones)} + ' registros'"></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle">
+                            <thead>
+                            <tr>
+                                <th class="ps-4">Folio</th>
+                                <th>Apertura / Sucursal</th>
+                                <th class="text-end">Sistema</th>
+                                <th class="text-end">Real</th>
+                                <th class="text-end">Diferencia</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center pe-4">Acción</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="s : ${sesiones}" class="border-bottom border-secondary border-opacity-10">
+                                <td class="ps-4">
+                                    <span class="badge bg-dark border border-secondary text-info px-3 py-2 rounded-pill fw-bold" th:text="'#' + ${s.idSesion}"></span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold text-white" th:text="${#temporals.format(s.fechaApertura, 'dd/MM/yyyy HH:mm')}"></span>
+                                        <small class="text-muted-custom" th:text="'Sucursal: ' + ${s.idSucursal}"></small>
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold text-white">
+                                    <span th:text="'$' + ${#numbers.formatDecimal(s.montoCierreSistema ?: 0, 1, 'COMMA', 2, 'POINT')}"></span>
+                                </td>
+                                <td class="text-end fw-bold">
+                                    <span th:class="${s.montoCierreReal != null ? 'text-success' : 'text-muted-custom opacity-50'}"
+                                          th:text="${s.montoCierreReal != null ? '$' + #numbers.formatDecimal(s.montoCierreReal, 1, 'COMMA', 2, 'POINT') : '--'}"></span>
+                                </td>
+                                <td class="text-end fw-bold">
+                                    <span th:if="${s.montoCierreReal != null}"
+                                          th:with="diff=${s.montoCierreReal - s.montoCierreSistema}"
+                                          th:class="${diff < 0 ? 'text-diff-neg' : (diff > 0 ? 'text-diff-pos' : 'text-muted-custom')}"
+                                          th:text="${diff == 0 ? '$0.00' : (diff > 0 ? '+' : '') + #numbers.formatDecimal(diff, 1, 'COMMA', 2, 'POINT')}">
+                                    </span>
+                                    <span th:unless="${s.montoCierreReal != null}" class="text-muted-custom">--</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge px-3 py-2 rounded-pill small fw-bold"
+                                          th:classappend="${s.estado == 'ABIERTA' ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-20' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-20'}"
+                                          th:text="${s.estado}"></span>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <a th:href="@{'/caja/detalle/' + ${s.idSesion}}" class="btn btn-sm btn-outline-info rounded-3">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(sesiones)}">
+                                <td colspan="7" class="text-center py-5 text-muted-custom">No hay sesiones en este rango.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:inline="javascript">
+
+        // --- LÓGICA DE FILTROS RÁPIDOS ---
+        function setRange(tipo) {
+            const hoy = new Date();
+            let inicio = new Date();
+            let fin = new Date();
+
+            switch(tipo) {
+                case 'hoy': break;
+                case '7d': inicio.setDate(hoy.getDate() - 7); break;
+                case '30d': inicio.setDate(hoy.getDate() - 30); break;
+                case 'mes': inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1); break;
+            }
+
+            document.getElementById('fInicio').value = inicio.toISOString().split('T')[0];
+            document.getElementById('fFin').value = fin.toISOString().split('T')[0];
+            document.getElementById('formFiltro').submit();
+        }
+
+        // --- GESTIÓN DE ESTADO DE CAJA ---
+        async function actualizarEstado() {
+            const badge = document.getElementById('statusBadge');
+            const acciones = document.getElementById('areaAcciones');
+            try {
+                const res = await fetch('/caja/estado');
+                const data = await res.json();
+                badge.innerHTML = ""; acciones.innerHTML = "";
+
+                if (data && data.activa) {
+                    badge.innerHTML = `
+                        <div class="display-1 text-success mb-3"><i class="bi bi-unlock-fill"></i></div>
+                        <h3 class="fw-bold text-white mb-1">TERMINAL ACTIVA</h3>
+                        <p class="text-muted-custom mb-0 small uppercase">SESIÓN: #${data.sesion.idSesion}</p>
+                        <p class="text-success fw-bold small mt-2">APERTURA: $${data.sesion.montoApertura.toFixed(2)}</p>`;
+                    acciones.innerHTML = `<button class="btn btn-warning w-100 py-3 mb-2 fw-bold text-dark" onclick="cerrarCaja()"><i class="bi bi-lock-fill me-2"></i>REALIZAR CIERRE (Z)</button>`;
+                } else {
+                    badge.innerHTML = `
+                        <div class="display-1 text-danger mb-3 opacity-25"><i class="bi bi-lock-fill"></i></div>
+                        <h3 class="fw-bold text-white mb-1">CAJA CERRADA</h3>
+                        <p class="text-muted-custom small">Inicie una sesión para operar</p>`;
+                    acciones.innerHTML = `<button class="btn btn-success w-100 py-3 fw-bold" onclick="abrirCaja()"><i class="bi bi-plus-circle-fill me-2"></i>ABRIR NUEVA CAJA</button>`;
+                }
+            } catch (e) {
+                badge.innerHTML = `<p class="text-danger">Error de comunicación con el servidor</p>`;
+            }
+        }
+
+        // --- FUNCIONES DE ACCIÓN ---
+        function abrirCaja() {
+            Swal.fire({
+                title: 'Apertura de Caja',
+                text: "¿Monto inicial en efectivo?",
+                input: 'number',
+                inputAttributes: { min: '0', step: '0.01' },
+                inputValue: '0',
+                showCancelButton: true,
+                confirmButtonText: 'Abrir Caja',
+                confirmButtonColor: '#22c55e',
+                background: '#1e293b',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/caja/abrir', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ monto_apertura: result.value || 0 })
+                    }).then(res => res.ok ? location.reload() : Swal.fire('Error', 'No se pudo abrir', 'error'));
+                }
+            });
+        }
+
+        function cerrarCaja() {
+            Swal.fire({
+                title: 'Corte de Caja',
+                text: "Ingrese el efectivo físico contado:",
+                input: 'number',
+                inputAttributes: { min: '0', step: '0.01' },
+                showCancelButton: true,
+                confirmButtonText: 'Cerrar Sesión',
+                confirmButtonColor: '#f59e0b',
+                background: '#1e293b',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/caja/cerrar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ monto_real: result.value || 0 })
+                    }).then(async (res) => {
+                        const data = await res.json();
+                        if (res.ok) {
+                            Swal.fire({
+                                title: 'Caja Cerrada',
+                                html: `Esperado: $${data.esperado}<br>Físico: $${data.real}<br>Diferencia: $${data.diferencia}`,
+                                icon: 'success',
+                                background: '#1e293b',
+                                color: '#fff'
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', 'No se pudo procesar el cierre', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            const fIn = document.getElementById('fInicio');
+            const fFi = document.getElementById('fFin');
+            if (!fIn.value || !fFi.value) {
+                const hoy = new Date();
+                const hace30 = new Date();
+                hace30.setDate(hoy.getDate() - 30);
+                if(!fIn.value) fIn.value = hace30.toISOString().split('T')[0];
+                if(!fFi.value) fFi.value = hoy.toISOString().split('T')[0];
+            }
+            actualizarEstado();
+        });
+    </script>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+
+<head>
+    <title>Historial de Gastos - Punto Fácil</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta th:name="_csrf" th:content="${_csrf?.token}"/>
+    <meta th:name="_csrf_header" th:content="${_csrf?.headerName}"/>
+
+    <style>
+        :root {
+            --pf-primary: #10b981;
+            --pf-dark-bg: #0f172a;
+            --pf-card-bg: #1e293b;
+            --pf-border: #334155;
+            --pf-text-main: #f8fafc;
+        }
+
+        .table-dark-custom {
+            background: var(--pf-card-bg) !important;
+            border: 1px solid var(--pf-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-dark-custom table {
+            background-color: transparent !important;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-dark-custom thead th {
+            background-color: rgba(15, 23, 42, 0.9) !important;
+            color: var(--pf-primary) !important;
+            border-bottom: 2px solid var(--pf-border) !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .table-dark-custom tfoot td {
+            background-color: rgba(15, 23, 42, 0.5) !important;
+            border-top: 2px solid var(--pf-border) !important;
+            color: var(--pf-primary) !important;
+            font-weight: bold;
+        }
+
+        .table-dark-custom td {
+            background-color: var(--pf-card-bg) !important;
+            color: var(--pf-text-main) !important;
+            border-bottom: 1px solid var(--pf-border) !important;
+            vertical-align: middle;
+            transition: background 0.2s;
+        }
+
+        .table-hover tbody tr:hover td {
+            background-color: #2d3a4f !important;
+        }
+
+        .gasto-anulado {
+            background-color: rgba(244, 63, 94, 0.05) !important;
+        }
+
+        .gasto-anulado td {
+            opacity: 0.6;
+            filter: grayscale(0.5);
+        }
+
+        .gasto-anulado td:not(.no-strike) {
+            text-decoration: line-through;
+            text-decoration-color: #ef4444;
+        }
+
+        .badge-status {
+            text-decoration: none !important;
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .form-control-dark {
+            background: #0f172a !important;
+            border: 1px solid var(--pf-border) !important;
+            color: white !important;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        .x-small {
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-white">Historial de Gastos</h4>
+            <p class="text-muted small mb-0">Visualiza y gestiona las salidas de efectivo.</p>
+        </div>
+        <a th:href="@{/gastos/nuevo}" class="btn btn-success px-4 fw-bold shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i> Nuevo Gasto
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border);">
+        <form th:action="@{/gastos/lista}" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">DESDE</label>
+                <input type="date" name="desde" th:value="${fechaDesde}" class="form-control form-control-dark">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">HASTA</label>
+                <input type="date" name="hasta" th:value="${fechaHasta}" class="form-control form-control-dark">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-white small fw-bold">BUSCAR</label>
+                <input type="text" class="form-control form-control-dark" id="filterInput" placeholder="Concepto, detalle o monto...">
+            </div>
+        </form>
+    </div>
+
+    <div class="table-dark-custom shadow-lg">
+        <table class="table table-hover" id="gastosTable">
+            <thead>
+            <tr>
+                <th class="ps-4">Fecha</th>
+                <th>Concepto</th>
+                <th>Estado</th>
+                <th>Pago</th>
+                <th>Detalle</th>
+                <th class="text-end">Monto</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="g : ${gastos}" th:classappend="${g.activo == false ? 'gasto-anulado' : ''}">
+                <td class="ps-4 small" th:text="${g.fecha != null ? #temporals.format(g.fecha, 'dd/MM/yyyy HH:mm') : '---'}"></td>
+
+                <td class="fw-bold" th:text="${g.nombreProducto}"></td>
+
+                <td class="no-strike">
+                    <span th:if="${g.activo}" class="badge bg-success-subtle text-success border border-success-subtle badge-status">Activo</span>
+                    <span th:if="${!g.activo}" class="badge bg-danger-subtle text-danger border border-danger-subtle badge-status">Anulado</span>
+                </td>
+
+                <td>
+                    <span class="badge bg-dark border border-secondary" th:text="${g.nombreFormaPago}"></span>
+                    <div th:if="${g.nombreBanco}" class="x-small text-info mt-1">
+                        <i class="bi bi-bank me-1"></i><span th:text="${g.nombreBanco}"></span>
+                    </div>
+                </td>
+
+                <td class="small text-muted italic" th:text="${g.descripcion}"></td>
+
+                <td class="text-end fw-bold text-white">
+                    $<span th:text="${#numbers.formatDecimal(g.monto, 1, 2, 'POINT')}"></span>
+                </td>
+
+                <td class="text-center no-strike">
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-sm btn-outline-info" title="Imprimir"
+                                th:onclick="'imprimirGasto(' + ${g.id_gasto ?: g.idGasto} + ')'">
+                            <i class="bi bi-printer"></i>
+                        </button>
+                        <button th:if="${g.activo}" class="btn btn-sm btn-outline-danger" title="Anular"
+                                th:onclick="'confirmarAnulacion(' + ${g.id_gasto ?: g.idGasto} + ')'">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            <tr id="noResultsRow" style="display: none;">
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="bi bi-search me-2"></i> No coinciden resultados con tu búsqueda.
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(gastos)}">
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="bi bi-info-circle me-2"></i> No se encontraron gastos en este rango de fechas.
+                </td>
+            </tr>
+            </tbody>
+
+            <tfoot th:if="${not #lists.isEmpty(gastos)}">
+            <tr>
+                <td colspan="5" class="text-end ps-4">TOTAL GASTOS ACTIVOS:</td>
+                <td class="text-end fw-bold">
+                    $<span th:text="${#numbers.formatDecimal(#aggregates.sum(gastos.?[activo == true].![monto]) ?: 0, 1, 2, 'POINT')}">0.00</span>
+                </td>
+                <td></td>
+            </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <script th:inline="javascript">
+        // Abre la vista del ticket en una pestaña nueva
+        function imprimirGasto(id) {
+            if(!id) return;
+            window.open(`/gastos/imprimir/${id}`, '_blank');
+        }
+
+        // Buscador en tiempo real mejorado
+        document.getElementById('filterInput').addEventListener('keyup', function() {
+            const val = this.value.toLowerCase();
+            let visibles = 0;
+            const rows = document.querySelectorAll('#gastosTable tbody tr:not(#noResultsRow)');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const matches = text.includes(val);
+                row.style.display = matches ? '' : 'none';
+                if(matches) visibles++;
+            });
+
+            const noResults = document.getElementById('noResultsRow');
+            if(noResults) noResults.style.display = visibles === 0 ? '' : 'none';
+        });
+
+        // Lógica de anulación con protección CSRF
+        function confirmarAnulacion(id) {
+            const token = document.querySelector('meta[name="_csrf"]')?.content;
+            const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+            Swal.fire({
+                title: '¿Anular este gasto?',
+                text: "El monto se reintegrará contablemente a la caja actual.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, anular',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#ffffff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.showLoading();
+
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token && header) headers[header] = token;
+
+                    fetch(`/gastos/anular/${id}`, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if(data.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Anulado!',
+                                    text: data.mensaje,
+                                    background: '#1e293b',
+                                    color: '#ffffff',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => location.reload());
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.mensaje,
+                                    background: '#1e293b',
+                                    color: '#ffffff'
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de conexión',
+                                text: 'No se pudo comunicar con el servidor.',
+                                background: '#1e293b',
+                                color: '#ffffff'
+                            });
+                        });
+                }
+            });
+        }
+    </script>
+</div>
+</body>
+</html>

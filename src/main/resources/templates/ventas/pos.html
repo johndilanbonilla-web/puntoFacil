@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head>
+    <title>Nueva Venta - Punto Fácil</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --accent-green: #22c55e;
+            --border-color: #334155;
+            --input-bg: #0f172a;
+            --placeholder-color: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-dark) !important;
+            color: var(--text-main);
+        }
+
+        .card-custom {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 1rem;
+        }
+
+        .form-control, .form-select {
+            background-color: var(--input-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: #ffffff !important;
+        }
+
+        .form-control::placeholder {
+            color: var(--placeholder-color) !important;
+        }
+
+        /* Header Info Boxes */
+        .info-box-v2 {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 100%;
+        }
+
+        .info-box-v2 i { font-size: 1.2rem; color: #38bdf8; }
+        .info-box-v2 .label-small { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; display: block; }
+        .info-box-v2 .value-bold { font-size: 0.85rem; font-weight: 700; color: white; }
+
+        /* --- CORRECCIÓN DE LA TABLA (PARA QUE NO SE VEA BLANCO) --- */
+        .table-dark-custom {
+            color: white !important;
+            background-color: transparent !important;
+            margin-bottom: 0;
+        }
+
+        /* Esto elimina el fondo blanco de las celdas */
+        .table-dark-custom tbody tr,
+        .table-dark-custom tbody td,
+        .table-dark-custom thead th {
+            background-color: transparent !important;
+            color: white !important;
+            border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        }
+
+        .table-dark-custom thead th {
+            color: #94a3b8 !important;
+            border-bottom: 2px solid var(--border-color) !important;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* Estilo para los botones de cantidad dentro de la tabla si los usas */
+        .btn-qty {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 0 8px;
+        }
+
+        /* Scroll Area */
+        .scroll-area-pos { max-height: 60vh; overflow-y: auto; }
+
+        .btn-green { background-color: var(--accent-green) !important; color: white !important; font-weight: 700; border: none; }
+        .btn-green:hover { background-color: #16a34a !important; }
+
+        .seccion-titulo { color: var(--accent-green) !important; font-weight: 800; font-size: 0.8rem; display: block; }
+        .label-ref { font-size: 0.65rem; color: var(--accent-green); font-weight: bold; text-transform: uppercase; }
+
+        #totalVentaTexto { font-size: 2.2rem; font-weight: 900; color: white; }
+
+        .busqueda-flotante {
+            position: absolute;
+            z-index: 1050;
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="container-fluid px-3">
+
+        <div class="card card-custom p-3 mb-4 shadow-sm">
+            <span class="seccion-titulo mb-3"><i class="bi bi-info-circle-fill me-2"></i>ENCABEZADO DE LA VENTA</span>
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <label class="label-ref">Cliente</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-dark border-secondary text-success"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" id="buscarClienteInput" class="form-control" placeholder="Buscar por nombre o NIT...">
+                        <button class="btn btn-outline-success" type="button"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                    </div>
+                    <div id="contenedorBusquedaClientes" class="busqueda-flotante list-group" style="display: none;">
+                        <div id="listaBusquedaClientes"></div>
+                    </div>
+                    <small class="text-secondary mt-1 d-block">Actual: <span id="clienteSeleccionadoLabel" class="text-success fw-bold">CONSUMIDOR FINAL</span></small>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="row g-2 h-100">
+                        <div class="col-md-4">
+                            <div class="info-box-v2">
+                                <i class="bi bi-person-badge"></i>
+                                <div><span class="label-small">Tipo Cliente:</span><span class="value-bold">CONSUMIDOR FINAL</span></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box-v2">
+                                <i class="bi bi-tags"></i>
+                                <div><span class="label-small">Precios:</span><span class="value-bold">PRECIO PÚBLICO</span></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-box-v2">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <div class="w-100">
+                                    <span class="label-small">Documento:</span>
+                                    <select id="selectTipoDocumento" class="form-select form-select-sm border-0 p-0 bg-transparent text-white fw-bold" style="box-shadow: none;">
+                                        <option value="1">TICKET</option>
+                                        <option value="2">FACTURA</option>
+                                        <option value="3">CREDITO FISCAL</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card card-custom p-4 h-100 shadow-lg">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <label class="form-label text-success fw-bold mb-0">BUSCADOR DE PRODUCTOS</label>
+                        <span class="texto-atajo text-secondary small"><i class="bi bi-keyboard me-1 text-success"></i> F2 para buscar</span>
+                    </div>
+
+                    <div class="input-group input-group-lg mb-4">
+                        <span class="input-group-text bg-dark border-secondary text-success"><i class="bi bi-search"></i></span>
+                        <input id="buscarProducto" class="form-control" placeholder="Escanee código o escriba nombre..." autocomplete="off" autofocus>
+                    </div>
+
+                    <div class="scroll-area-pos">
+                        <div id="contenedorBusqueda" class="mb-4" style="display: none;">
+                            <span class="seccion-titulo text-info">RESULTADOS</span>
+                            <div class="d-flex flex-wrap gap-2 mt-2" id="listaBusqueda"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <span class="seccion-titulo"><i class="bi bi-star-fill text-warning me-2"></i>PRODUCTOS FAVORITOS</span>
+                            <div class="d-flex flex-wrap gap-2 mt-2 fav-container" id="listaFavoritos"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <span class="seccion-titulo text-danger"><i class="bi bi-fire me-2"></i>MÁS VENDIDOS</span>
+                            <div class="d-flex flex-wrap gap-2 mt-2 fav-container" id="listaTopVendidos"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card card-custom p-4 shadow-lg">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="m-0 text-white fw-bold"><i class="bi bi-cart3 me-2 text-success"></i>Detalle de Venta</h5>
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2" id="itemsCount">0 Artículos</span>
+                    </div>
+
+                    <div style="min-height: 200px; max-height: 300px; overflow-y: auto;" class="mb-3 border-bottom border-secondary border-opacity-20">
+                        <table class="table table-dark-custom align-middle">
+                            <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-end">Total</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="carrito">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pt-2">
+                        <div class="p-3 rounded-4 mb-3" style="background: #0f172a; border: 1px solid #334155;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-secondary">Subtotal:</span>
+                                <span id="subtotalVenta" class="text-white fw-medium">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-20 mt-2">
+                                <span class="h6 mb-0 text-success fw-bold">TOTAL A PAGAR:</span>
+                                <span id="totalVentaTexto" data-total="0">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div id="listaPagosRealizados" class="mb-3 d-flex flex-wrap gap-2"></div>
+
+                        <div class="p-3 mb-3 rounded-4" style="background: rgba(30, 41, 59, 0.5); border: 1px dashed #334155;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-secondary small">Total Cubierto:</span>
+                                <span id="totalPagadoTexto" class="text-success fw-bold">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-secondary small">Resta / Vuelto:</span>
+                                <span id="totalRestanteTexto" class="text-info fw-bold">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-7">
+                                <select id="selectFormaPago" class="form-select form-select-lg fw-bold">
+                                    <option th:each="fp : ${formasPago}" th:value="${fp.idFormaPago}" th:data-categoria="${fp.tipoCategoria}" th:text="${fp.nombre}"></option>
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <div class="input-group input-group-lg">
+                                    <input type="number" id="montoPago" class="form-control text-center fw-bold text-success" placeholder="0.00">
+                                    <button class="btn btn-green" type="button" onclick="agregarPago()"><i class="bi bi-plus-lg"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="contenedorReferencia" class="mb-3" style="display: none;">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="label-ref">Banco</label>
+                                    <select id="selectBanco" class="form-select form-select-sm">
+                                        <option value="">-- Seleccione --</option>
+                                        <option th:each="b : ${bancos}" th:value="${b.idBanco}" th:text="${b.nombreBanco}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="label-ref">Referencia</label>
+                                    <input type="text" id="refNumero" class="form-control form-control-sm" placeholder="Ej: 98452">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="label-ref">Titular</label>
+                                    <input type="text" id="refTitular" class="form-control form-control-sm" placeholder="Nombre completo">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-2 mb-3 rounded-3" style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.1);">
+                            <div class="form-check form-switch m-0 d-flex align-items-center">
+                                <input class="form-check-input" type="checkbox" id="checkImprimir" checked>
+                                <label class="form-check-label text-white ms-3 small fw-bold" for="checkImprimir">IMPRIMIR TICKET AUTOMÁTICAMENTE</label>
+                            </div>
+                        </div>
+
+                        <button id="btnFinalizarVenta" class="btn btn-green btn-lg w-100 py-3 text-white fw-bold shadow-lg" onclick="finalizarVenta()" th:disabled="${!cajaAbierta}">
+                            <i class="bi bi-check2-all me-2"></i> FINALIZAR VENTA (F10)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script th:src="@{/js/pos.js}"></script>
+</th:block>
+
+</body>
+</html>

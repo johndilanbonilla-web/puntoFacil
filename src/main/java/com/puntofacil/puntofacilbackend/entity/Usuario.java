@@ -13,24 +13,41 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario")
-    private Long id;
+    private Long idUsuario;
+
+    @Column(name = "id_empresa", nullable = false)
+    private Long idEmpresa;
 
     @Column(name = "nombre_completo", nullable = false)
-    private String nombre;
+    private String nombreCompleto;
 
     @Column(name = "username", nullable = false, unique = true)
-    private String usuario;
+    private String username;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    /**
+     * Campo de compatibilidad: Se llena automáticamente en el Service
+     * con el valor de nombre_rol de la tabla Roles.
+     */
+    @Column(name = "rol")
     private String rol;
 
-    @Column(nullable = false)
-    private Boolean activo;
+    @Column(name = "activo")
+    private Boolean activo = true;
 
-    @ManyToOne
-    @JoinColumn(name = "id_empresa", nullable = false)
-    private Empresa empresa;
+    /**
+     * Relación con la tabla Roles (id_role)
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_role")
+    private Rol roleRelacional;
+
+    /**
+     * Relación con la tabla Sucursal (id_sucursal)
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_sucursal", nullable = false)
+    private Sucursal sucursal;
 }

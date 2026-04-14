@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+
+<head>
+    <title>Registrar Gasto - Punto Fácil</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Mejora de contraste para legibilidad en modo oscuro/claro */
+        .form-label { color: #e2e8f0; font-weight: 600; margin-bottom: 0.5rem; }
+        .form-control, .form-select {
+            background-color: #1a202c !important;
+            border: 1px solid #4a5568 !important;
+            color: #ffffff !important;
+            padding: 0.75rem;
+        }
+        .form-control::placeholder { color: #718096; }
+        .card-custom {
+            background: #2d3748;
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        #seccionBanco { display: none; } /* Oculto por defecto hasta que se elija transferencia/banco */
+
+        .btn-danger { background-color: #e53e3e; border: none; }
+        .btn-danger:hover { background-color: #c53030; }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <div class="card card-custom">
+                    <div class="card-header bg-danger text-white p-4 rounded-top-4">
+                        <h4 class="mb-0 fw-bold"><i class="bi bi-printer me-2"></i> Nuevo Gasto e Impresión</h4>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <form id="gastoForm">
+                            <div class="row g-3">
+
+                                <div class="col-md-8">
+                                    <label class="form-label">Concepto del Gasto</label>
+                                    <select class="form-select" name="idProducto" id="idProducto" required>
+                                        <option value="">Seleccione el concepto...</option>
+                                        <option th:each="p : ${productosGasto}"
+                                                th:value="${p.id_producto}"
+                                                th:text="${p.nombre}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Monto ($)</label>
+                                    <input type="number" step="0.01" class="form-control fw-bold text-danger"
+                                           name="monto" placeholder="0.00" required>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Forma de Pago</label>
+                                    <select class="form-select" name="idFormaPago" id="idFormaPago" onchange="toggleBanco()" required>
+                                        <option value="">Seleccione...</option>
+                                        <option th:each="fp : ${formasPago}"
+                                                th:value="${fp.id_forma_pago}"
+                                                th:text="${fp.nombre}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6" id="seccionBanco">
+                                    <label class="form-label">Banco</label>
+                                    <select class="form-select" name="idBanco" id="idBanco">
+                                        <option value="">Seleccione el banco...</option>
+                                        <option th:each="b : ${bancos}"
+                                                th:value="${b.id_banco}"
+                                                th:text="${b.nombre}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">Descripción / Observaciones</label>
+                                    <textarea class="form-control" name="descripcion" rows="3"
+                                              placeholder="Ej: Pago de recibo CAESS mes de Marzo..."></textarea>
+                                </div>
+
+                                <div class="col-12 d-flex gap-2 mt-4">
+                                    <a th:href="@{/gastos/lista}" class="btn btn-outline-secondary px-4">Cancelar</a>
+                                    <button type="submit" class="btn btn-danger w-100 fw-bold">
+                                        <i class="bi bi-save me-2"></i> Guardar e Imprimir
+                                    </button>
+                                </div>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        // Mostrar banco solo si es transferencia o similar
+        function toggleBanco() {
+            const fpSelect = document.getElementById('idFormaPago');
+            const seccionBanco = document.getElementById('seccionBanco');
+            const texto = fpSelect.options[fpSelect.selectedIndex].text.toLowerCase();
+
+            if (texto.includes('transferencia') || texto.includes('banco') || texto.includes('cheque')) {
+                seccionBanco.style.display = 'block';
+                document.getElementById('idBanco').required = true;
+            } else {
+                seccionBanco.style.display = 'none';
+                document.getElementById('idBanco').required = false;
+                document.getElementById('idBanco').value = "";
+            }
+        }
+
+        // Manejo del Envío
+        document.getElementById('gastoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            // Convertimos nombres de campos para que coincidan con el DTO si es necesario
+            const payload = {
+                idProducto: data.idProducto,
+                monto: data.monto,
+                idFormaPago: data.idFormaPago,
+                idBanco: data.idBanco || null,
+                descripcionPersonalizada: data.descripcion
+            };
+
+            fetch('/gastos/guardar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        // 1. ABRIR COMPROBANTE: Usamos el ID que nos devuelva el controller
+                        const win = window.open('/gastos/imprimir/' + res.idGasto, '_blank');
+
+                        Swal.fire({
+                            title: '¡Gasto Guardado!',
+                            text: 'Generando comprobante de impresión...',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = '/gastos/lista';
+                        });
+                    } else {
+                        Swal.fire('Error', res.mensaje, 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+                });
+        });
+    </script>
+</div>
+</body>
+</html>

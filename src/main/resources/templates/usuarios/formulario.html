@@ -1,0 +1,204 @@
+<th:block xmlns:th="http://www.thymeleaf.org"
+          xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+          layout:decorate="~{layouts/main}">
+
+    <div layout:fragment="content">
+        <style>
+            /* Paleta de colores local para asegurar visibilidad */
+            :root {
+                --input-border: #334155; /* Slate 700: visible en fondo oscuro */
+                --input-focus: #3b82f6;  /* Blue 500 */
+                --card-bg: #1e293b;      /* Slate 800 */
+            }
+
+            /* Mejora de contraste para inputs y placeholders */
+            .form-control-dark {
+                background: #0f172a !important; /* Fondo más oscuro que la card */
+                border: 1px solid var(--input-border) !important;
+                color: #f8fafc !important;
+                transition: all 0.2s ease;
+            }
+
+            .form-control-dark::placeholder {
+                color: #64748b !important; /* Slate 500 */
+                opacity: 1;
+            }
+
+            .form-control-dark:focus {
+                border-color: var(--input-focus) !important;
+                background: #0f172a !important;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+                outline: none;
+            }
+
+            .input-group-text-dark {
+                background: #1e293b;
+                border: 1px solid var(--input-border);
+                color: #94a3b8;
+            }
+
+            .card-custom {
+                background: var(--card-bg) !important;
+                border: 1px solid var(--input-border);
+                border-radius: 16px;
+            }
+
+            /* Etiquetas y textos */
+            .text-label-visible {
+                color: #cbd5e1 !important; /* Slate 300 */
+            }
+
+            .text-helper-visible {
+                color: #38bdf8 !important; /* Sky 400 */
+            }
+
+            /* Estilo para el switch */
+            .form-check-input {
+                background-color: #334155;
+                border-color: #475569;
+            }
+            .form-check-input:checked {
+                background-color: #22c55e;
+                border-color: #22c55e;
+            }
+        </style>
+
+        <div class="mb-4">
+            <nav aria-label="breadcrumb" class="mb-2">
+                <ol class="breadcrumb mb-0" style="font-size: 0.8rem;">
+                    <li class="breadcrumb-item"><a th:href="@{/usuarios/mantenimiento}" class="text-primary text-decoration-none">Usuarios</a></li>
+                    <li class="breadcrumb-item active text-light opacity-50" aria-current="page"
+                        th:text="${usuario.idUsuario == null ? 'Nuevo' : 'Editar'}">Registro</li>
+                </ol>
+            </nav>
+            <h4 class="fw-bold text-white mb-0">
+                <i class="bi bi-person-gear me-2 text-primary"></i>
+                <span th:text="${usuario.idUsuario == null ? 'Crear Nuevo Usuario' : 'Configurar Perfil'}"></span>
+            </h4>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card card-custom p-3 p-md-4 shadow-lg">
+                    <form th:action="@{/usuarios/guardar}" th:object="${usuario}" method="post" autocomplete="off">
+                        <input type="hidden" th:field="*{idUsuario}" />
+                        <input type="hidden" th:field="*{idEmpresa}" />
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-label-visible small fw-bold">Nombre Completo</label>
+                                <input type="text" th:field="*{nombreCompleto}" class="form-control form-control-dark py-2"
+                                       placeholder="Ej: Juan Pérez" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-label-visible small fw-bold">Nombre de Usuario</label>
+                                <div class="input-group">
+                                    <span class="input-group-text input-group-text-dark">@</span>
+                                    <input type="text" th:field="*{username}" class="form-control form-control-dark py-2"
+                                           placeholder="usuario123" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label text-label-visible small fw-bold">Rol de Acceso</label>
+                                <select th:field="*{rol}" class="form-select form-control-dark py-2" style="background-image: url('data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 16 16\'%3e%3cpath fill=\'none\' stroke=\'%2394a3b8\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'m2 5 6 6 6-6\'/%3e%3c/svg%3e');" required>
+                                    <option value="VENDEDOR" class="bg-dark">Vendedor</option>
+                                    <option value="ADMIN" class="bg-dark">Administrador</option>
+                                    <option value="CAJERO" class="bg-dark">Cajero / Inventario</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label text-label-visible small fw-bold">Contraseña</label>
+                                <div class="input-group">
+                                    <input type="password" id="passInput" th:field="*{password}" class="form-control form-control-dark py-2"
+                                           th:required="${usuario.idUsuario == null}"
+                                           placeholder="••••••••">
+                                    <button class="btn btn-dark border border-start-0" style="border-color: var(--input-border);" type="button" onclick="togglePass()">
+                                        <i id="passIcon" class="bi bi-eye text-info"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text text-helper-visible opacity-75" style="font-size: 0.75rem;">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <span th:text="${usuario.idUsuario == null ? 'Asigne una clave temporal.' : 'Deje en blanco para mantener la actual.'}"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <div class="p-3 rounded-3 border border-secondary border-opacity-25" style="background: rgba(15, 23, 42, 0.4);">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" th:field="*{activo}" id="checkActivo">
+                                        <label class="form-check-label text-white fw-bold" for="checkActivo">Habilitar acceso al sistema</label>
+                                    </div>
+                                    <p class="text-label-visible small mb-0 ms-0 ms-md-4 mt-1 opacity-75">Si se desactiva, el usuario no podrá iniciar sesión.</p>
+                                </div>
+                            </div>
+
+                            <div class="col-12 d-flex gap-2 mt-3">
+                                <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">
+                                    <i class="bi bi-save me-2"></i>Guardar Cambios
+                                </button>
+                                <a th:href="@{/usuarios/mantenimiento}" class="btn btn-outline-light border-opacity-25 px-4">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="h-100 p-4 rounded-4" style="border: 1px dashed #334155; background: rgba(30, 41, 59, 0.2);">
+                    <h6 class="text-primary fw-bold mb-4 small text-uppercase" style="letter-spacing: 1.5px;">Instrucciones de registro</h6>
+
+                    <div class="d-flex flex-column gap-4">
+                        <div class="d-flex gap-3">
+                            <div class="bg-success bg-opacity-10 p-2 rounded-3 h-100">
+                                <i class="bi bi-check2-circle text-success fs-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-white fw-bold mb-1 small">Roles Definidos</p>
+                                <p class="text-label-visible small mb-0 opacity-75">Los permisos se ajustan automáticamente según el rol seleccionado.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <div class="bg-primary bg-opacity-10 p-2 rounded-3 h-100">
+                                <i class="bi bi-shield-lock text-primary fs-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-white fw-bold mb-1 small">Seguridad de Datos</p>
+                                <p class="text-label-visible small mb-0 opacity-75">Todas las contraseñas se almacenan con cifrado BCrypt de alta seguridad.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <div class="bg-info bg-opacity-10 p-2 rounded-3 h-100">
+                                <i class="bi bi-info-circle text-info fs-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-white fw-bold mb-1 small">Estado de Cuenta</p>
+                                <p class="text-label-visible small mb-0 opacity-75">Un usuario inactivo no puede acceder pero su historial de ventas se preserva.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function togglePass() {
+                const input = document.getElementById('passInput');
+                const icon = document.getElementById('passIcon');
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                } else {
+                    input.type = "password";
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                }
+            }
+        </script>
+    </div>
+</th:block>

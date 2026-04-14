@@ -1,0 +1,93 @@
+<div th:fragment="resultados">
+    <style>
+        .producto-item {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            background-color: #1e293b !important;
+            user-select: none;
+        }
+        .producto-item:hover {
+            background-color: #334155 !important;
+            border-left: 4px solid #22c55e !important;
+            padding-left: 14px;
+        }
+        .text-nombre { color: #f8fafc !important; font-weight: 700; font-size: 1rem; display: block; }
+        .text-codigo { color: #94a3b8 !important; font-size: 0.8rem; }
+        .badge-precio {
+            background: rgba(34, 197, 94, 0.1) !important;
+            color: #22c55e !important;
+            border: 1px solid rgba(34, 197, 94, 0.3) !important;
+            font-weight: 800; padding: 6px 12px; border-radius: 8px;
+        }
+    </style>
+
+    <div th:each="p : ${productos}"
+         class="producto-item animate__animated animate__fadeInUp animate__faster"
+         th:data-id="${p.idProducto}"
+         th:data-nombre="${p.nombre}"
+         th:data-precio="${p.precio != null ? p.precio : 0.00}"
+         onclick="prepararAgregar(this)">
+
+        <div class="d-flex w-100 justify-content-between align-items-center">
+            <div class="info-container overflow-hidden">
+                <span class="text-nombre text-truncate" th:text="${p.nombre}">NOMBRE</span>
+                <span class="text-codigo">
+                    <i class="bi bi-upc-scan me-2 text-success"></i>
+                    <span th:text="${p.codigoBarra != null ? p.codigoBarra : 'SIN CÓDIGO'}">0000000000</span>
+                </span>
+            </div>
+            <div class="ms-3">
+                <span class="badge badge-precio">
+                    $<span th:text="${#numbers.formatDecimal(p.precio != null ? p.precio : 0.00, 1, 2)}">0.00</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(productos)}" class="text-center py-5">
+        <i class="bi bi-search fs-1 d-block mb-3 opacity-20 text-muted"></i>
+        <p class="mb-0 fw-bold text-muted">No se encontraron productos</p>
+    </div>
+
+    <script th:inline="javascript">
+        function prepararAgregar(elemento) {
+            const id = elemento.getAttribute('data-id');
+            const nombre = elemento.getAttribute('data-nombre');
+            const precio = elemento.getAttribute('data-precio');
+            if (typeof agregarProducto === 'function') {
+                agregarProducto(id, nombre, precio);
+            }
+        }
+    </script>
+</div>
+
+<tr th:fragment="resultados_mantenimiento" th:each="p : ${productos}"
+    class="hover:bg-gray-700/20 transition-colors group">
+    <td class="px-6 py-4" data-label="Producto">
+        <div class="font-bold text-white text-base" th:text="${p.nombre}">Nombre</div>
+        <div class="text-xs text-emerald-400 font-medium"
+             th:text="${p.categoria?.nombre} ?: 'Sin Categoría'">Categoría
+        </div>
+    </td>
+    <td class="px-6 py-4 font-mono text-sm text-gray-400" data-label="Código"
+        th:text="${p.codigoBarra} ?: 'S/C'">-
+    </td>
+    <td class="px-6 py-4 text-center" data-label="Precio">
+        <span class="text-emerald-400 font-black text-lg"
+              th:text="${'$' + #numbers.formatDecimal(p.precio != null ? p.precio : 0, 1, 2)}"></span>
+    </td>
+    <td class="px-6 py-4 text-right" data-label="Acciones">
+        <div class="flex justify-end gap-2 btn-action-group">
+            <button th:onclick="'editarProducto(' + ${p.idProducto} + ')'"
+                    class="p-2.5 bg-emerald-600/10 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-600/20">
+                <i class="bi bi-pencil-square"></i>
+            </button>
+            <button th:onclick="'anularProducto(' + ${p.idProducto} + ')'"
+                    class="p-2.5 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-600/20">
+                <i class="bi bi-trash3"></i>
+            </button>
+        </div>
+    </td>
+</tr>

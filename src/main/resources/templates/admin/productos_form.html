@@ -1,0 +1,213 @@
+<th:block xmlns:th="http://www.thymeleaf.org"
+          xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+          layout:decorate="~{layouts/main}">
+
+    <head>
+        <title>Producto | PuntoFácil</title>
+        <style>
+            :root {
+                --pf-primary: #10b981;
+                --pf-border: #334155;
+                --pf-dark-bg: #0f172a;
+                --pf-card-bg: #1e293b;
+                --pf-text-muted: #94a3b8; /* Slate 400 */
+                --pf-placeholder: #64748b; /* Slate 500 */
+            }
+            .form-card {
+                background: var(--pf-card-bg);
+                border: 1px solid var(--pf-border);
+                border-radius: 24px;
+                max-width: 850px;
+                margin: 2rem auto;
+                color: white;
+            }
+            .form-header {
+                padding: 1.25rem 1.5rem;
+                border-bottom: 1px solid var(--pf-border);
+                background: rgba(15, 23, 42, 0.5);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .form-control-dark {
+                background: var(--pf-dark-bg) !important;
+                border: 1px solid var(--pf-border) !important;
+                color: white !important;
+                padding: 12px;
+                transition: all 0.2s ease;
+            }
+            .form-control-dark:focus {
+                border-color: var(--pf-primary) !important;
+                box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+            }
+            /* Corrección de visibilidad para placeholders */
+            .form-control-dark::placeholder {
+                color: var(--pf-placeholder) !important;
+                opacity: 1;
+            }
+            /* Etiquetas y textos secundarios */
+            label.text-uppercase {
+                color: var(--pf-text-muted) !important;
+                font-size: 0.75rem;
+                letter-spacing: 0.05em;
+                font-weight: 700;
+            }
+            .text-muted {
+                color: var(--pf-text-muted) !important;
+            }
+            /* Custom Switch */
+            .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+            .switch input { opacity: 0; width: 0; height: 0; }
+            .slider {
+                position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+                background-color: #334155; transition: .4s; border-radius: 34px;
+            }
+            .slider:before {
+                position: absolute; content: ""; height: 18px; width: 18px;
+                left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+            }
+            input:checked + .slider { background-color: var(--pf-primary); }
+            input:checked + .slider:before { transform: translateX(20px); }
+
+            .section-label {
+                color: var(--pf-primary);
+                font-size: 0.75rem;
+                letter-spacing: 0.1em;
+                border-left: 3px solid var(--pf-primary);
+                padding-left: 10px;
+                margin-bottom: 1.5rem;
+            }
+            .fav-container {
+                padding: 1.25rem;
+                border-radius: 16px;
+                border: 1px solid var(--pf-border);
+                background: rgba(15, 23, 42, 0.3);
+            }
+        </style>
+    </head>
+
+    <div layout:fragment="content">
+        <div class="form-card shadow-lg overflow-hidden">
+            <div class="form-header">
+                <div>
+                    <h5 class="fw-bold mb-0 text-white">Gestión de Ítem</h5>
+                    <small class="text-muted">Complete la información del catálogo</small>
+                </div>
+                <a th:href="@{/productos/mantenimiento}" class="btn-close btn-close-white opacity-50 shadow-none"></a>
+            </div>
+
+            <form id="formProducto" class="p-4 p-md-5">
+                <input type="hidden" id="idProducto" th:value="${producto?.idProducto}">
+
+                <div class="row g-4">
+                    <div class="col-12">
+                        <p class="section-label fw-bold text-uppercase">Información Básica</p>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="mb-2 text-uppercase">Nombre del Producto / Servicio</label>
+                        <input type="text" id="nombre" th:value="${producto?.nombre}"
+                               class="form-control form-control-dark" placeholder="Ej: Coca Cola 600ml" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="mb-2 text-uppercase">Tipo</label>
+                        <select id="idTipoProducto" class="form-select form-control-dark">
+                            <option value="1" th:selected="${producto?.idTipoProducto == 1}">Producto</option>
+                            <option value="2" th:selected="${producto?.idTipoProducto == 2}">Servicio</option>
+                            <option value="3" th:selected="${producto?.idTipoProducto == 3}">Combo</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="mb-2 text-uppercase">Familia / Categoría</label>
+                        <select id="idFamilia" class="form-select form-control-dark">
+                            <option value="">-- Sin Familia --</option>
+                            <option th:each="f : ${familias}" th:value="${f.idFamilia}" th:text="${f.nombre}"
+                                    th:selected="${f.idFamilia == producto?.familia?.idFamilia}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="mb-2 text-uppercase">Código de Barras</label>
+                        <input type="text" id="codigoBarra" th:value="${producto?.codigoBarra}"
+                               class="form-control form-control-dark" placeholder="Escanee o escriba el EAN-13">
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <p class="section-label fw-bold text-uppercase">Precios y Stock</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="mb-2 text-uppercase">Costo ($)</label>
+                        <input type="number" step="0.0001" id="costo" th:value="${producto?.costoUltimo}"
+                               class="form-control form-control-dark" placeholder="0.0000">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="mb-2 text-uppercase">Precio Venta ($)</label>
+                        <input type="number" step="0.01" id="precioVenta" th:value="${producto?.precio}"
+                               class="form-control form-control-dark" placeholder="0.00" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="mb-2 text-uppercase">Stock Mínimo</label>
+                        <input type="number" step="1" id="stockMinimo" th:value="${producto?.inventario?.stockMinimo ?: 0}"
+                               class="form-control form-control-dark" placeholder="0">
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <div class="fav-container d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-white d-block fw-bold">Producto Favorito</span>
+                                <small class="text-muted">Aparecerá en el acceso rápido del punto de venta</small>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="esFavorito" th:checked="${producto?.esFavorito == 1}">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 d-flex gap-3">
+                    <a th:href="@{/productos/mantenimiento}" class="btn btn-outline-light flex-grow-1 py-3 fw-bold border-0" style="background: rgba(255,255,255,0.05)">
+                        Cancelar
+                    </a>
+                    <button type="button" id="btnGuardar" onclick="validarYGuardar()" class="btn btn-success flex-grow-1 py-3 fw-bold shadow-lg">
+                        <span id="btnText"><i class="bi bi-save2-fill me-2"></i>Guardar Cambios</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script th:inline="javascript">
+            function validarYGuardar() {
+                const nombre = document.getElementById('nombre').value.trim();
+                const precio = document.getElementById('precioVenta').value;
+
+                if (!nombre || !precio || precio <= 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Datos Incompletos',
+                        text: 'El nombre y un precio de venta válido son obligatorios.',
+                        background: '#1e293b',
+                        color: '#fff',
+                        confirmButtonColor: '#10b981'
+                    });
+                    return;
+                }
+
+                if (typeof guardarProducto === 'function') {
+                    guardarProducto();
+                } else {
+                    console.error('Error: mantenimiento.js no ha cargado correctamente.');
+                }
+            }
+        </script>
+        <script th:src="@{/js/mantenimiento.js(v=${version})}"></script>
+    </th:block>
+</th:block>

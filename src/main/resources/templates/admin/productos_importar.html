@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head>
+    <title>Importar Catálogo - Punto Fácil</title>
+    <style>
+        :root {
+            --dark-bg: #0f172a;
+            --dark-card: #1e293b;
+            --dark-border: #334151;
+            --accent-emerald: #34d399;
+            --accent-indigo: #a5b4fc;
+            --emerald-glow: rgba(52, 211, 153, 0.15);
+        }
+
+        body { background-color: var(--dark-bg) !important; color: #f1f5f9; }
+
+        .card-import {
+            background-color: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .file-upload-wrapper {
+            border: 2px dashed #64748b;
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.4s ease;
+            background: rgba(15, 23, 42, 0.6);
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper.file-selected {
+            border-color: var(--accent-emerald);
+            background: var(--emerald-glow);
+            border-style: solid;
+        }
+
+        .instruction-box {
+            background: #020617;
+            border: 1px solid var(--dark-border);
+            border-left: 4px solid var(--accent-emerald);
+            border-radius: 12px;
+        }
+
+        .section-header-text {
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .column-badge {
+            background: #f8fafc;
+            color: #0f172a !important;
+            padding: 5px 12px;
+            border-radius: 8px;
+            margin-right: 6px;
+            margin-bottom: 10px;
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 800;
+        }
+
+        .column-badge.highlight { background: #10b981; color: #ffffff !important; }
+        .column-badge.critical-field { background: #f59e0b; color: #000000 !important; }
+        .column-badge.code-field { background: #6366f1; color: #ffffff !important; }
+
+        .legend-text-white { color: #ffffff !important; font-size: 13.5px; line-height: 1.6; }
+        .legend-title-emerald { color: var(--accent-emerald) !important; font-weight: 800; display: block; text-transform: uppercase; font-size: 11px; }
+
+        .btn-modern-import {
+            background: #6366f1 !important;
+            color: #ffffff !important;
+            border: none;
+            padding: 16px;
+            font-weight: 800;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-modern-import:hover:not(:disabled) { background: #4f46e5 !important; transform: translateY(-2px); }
+
+        .btn-template {
+            background: rgba(52, 211, 153, 0.1);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-template:hover {
+            background: var(--accent-emerald);
+            color: #0f172a;
+        }
+
+        .card-footer-custom {
+            background: rgba(15, 23, 42, 0.4);
+            border-top: 1px solid var(--dark-border);
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-11 col-lg-9">
+
+                <div class="text-center mb-5 px-2">
+                    <div class="inline-block p-3 bg-emerald-500/10 rounded-2xl mb-3">
+                        <i class="bi bi-file-earmark-spreadsheet fs-2" style="color: var(--accent-emerald)"></i>
+                    </div>
+                    <h2 class="fw-bold text-white mb-1">Carga Masiva de Catálogo</h2>
+                    <p class="text-slate-400 small uppercase tracking-widest">Importación Jerárquica por Familia de Productos</p>
+                </div>
+
+                <div class="card card-import">
+                    <div class="card-body p-4 md:p-5">
+
+                        <div class="flex justify-end mb-4">
+                            <a th:href="@{/productos/descargar-plantilla}"
+                               class="btn btn-template px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+                                <i class="bi bi-download"></i> Descargar Plantilla CSV
+                            </a>
+                        </div>
+
+                        <form th:action="@{/productos/importar}" method="post" enctype="multipart/form-data" id="formImportar">
+
+                            <div class="mb-5">
+                                <div class="file-upload-wrapper" id="drop-zone" onclick="document.getElementById('archivoInput').click()">
+                                    <div class="mb-3" id="upload-icon-container">
+                                        <i class="bi bi-cloud-arrow-up fs-1" style="color: var(--accent-emerald)"></i>
+                                    </div>
+                                    <input type="file" name="archivo" id="archivoInput" class="d-none" accept=".csv" required
+                                           onchange="validarYActualizar(this)">
+                                    <div id="file-label" class="fw-bold text-white fs-5 text-truncate px-3">Seleccionar archivo .CSV</div>
+                                    <div id="file-sub-label" class="mt-2 text-slate-400 small">Arrastra el archivo o haz clic aquí</div>
+                                </div>
+                            </div>
+
+                            <div class="instruction-box p-4 mb-5">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h6 class="section-header-text small mb-0">Estructura Requerida (13 Columnas)</h6>
+                                    <span class="badge bg-white/10 text-white border border-white/20 text-[10px]">FORMATO CSV (UTF-8)</span>
+                                </div>
+
+                                <div class="bg-slate-950 p-4 rounded-xl border border-slate-700 shadow-inner mb-4" style="line-height: 2.8;">
+                                    <span class="column-badge">1. codigo_barra</span>
+                                    <span class="column-badge">2. nombre</span>
+                                    <span class="column-badge">3. costo</span>
+                                    <span class="column-badge">4. precio</span>
+                                    <span class="column-badge">5. stock_min</span>
+                                    <span class="column-badge">6. stock_max</span>
+                                    <span class="column-badge highlight">7. tipo_item</span>
+                                    <span class="column-badge highlight">8. favorito</span>
+                                    <span class="column-badge critical-field">9. id_familia</span>
+                                    <span class="column-badge">10. id_marca</span>
+                                    <span class="column-badge">11. id_unidad_vta</span>
+                                    <span class="column-badge">12. id_unidad_cpa</span>
+                                    <span class="column-badge code-field">13. codigo_interno</span>
+                                </div>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi bi-diagram-3-fill fs-5" style="color: #f59e0b"></i>
+                                            <div class="legend-text-white">
+                                                <span class="legend-title-emerald" style="color: #f59e0b !important;">Relación Directa</span>
+                                                El <strong>ID Familia (9)</strong> es obligatorio. La categoría se determinará automáticamente según la configuración de la familia.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi bi-search fs-5" style="color: var(--accent-indigo)"></i>
+                                            <div class="legend-text-white">
+                                                <span class="legend-title-emerald">Identificación</span>
+                                                Usa el <strong>Código Interno (13)</strong> para búsquedas personalizadas en el punto de venta.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-modern-import btn-lg fw-bold rounded-xl py-3 shadow-lg" id="btnSubmit">
+                                    <span id="btnText"><i class="bi bi-cloud-upload-fill me-2"></i>Procesar Importación</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card-footer-custom">
+                        <a th:href="@{/productos/mantenimiento}" class="text-slate-400 hover:text-white text-decoration-none small transition-colors font-medium">
+                            <i class="bi bi-arrow-left me-1"></i> Volver al listado de productos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function validarYActualizar(input) {
+            const label = document.getElementById('file-label');
+            const subLabel = document.getElementById('file-sub-label');
+            const dropZone = document.getElementById('drop-zone');
+            const iconContainer = document.getElementById('upload-icon-container');
+            const file = input.files[0];
+
+            if (file) {
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Formato incorrecto',
+                        text: 'Por favor, selecciona un archivo con extensión .CSV',
+                        background: '#1e293b',
+                        color: '#fff',
+                        confirmButtonColor: '#6366f1'
+                    });
+                    resetUploadZone();
+                    input.value = '';
+                    return;
+                }
+
+                label.innerText = file.name;
+                label.style.color = "#ffffff";
+                subLabel.innerText = "¡ARCHIVO CARGADO CORRECTAMENTE!";
+                subLabel.style.color = "#34d399";
+                subLabel.style.fontWeight = "900";
+                dropZone.classList.add('file-selected');
+                iconContainer.innerHTML = '<i class="bi bi-check-circle-fill fs-1 animate__animated animate__bounceIn" style="color: #34d399;"></i>';
+            }
+        }
+
+        function resetUploadZone() {
+            const label = document.getElementById('file-label');
+            const subLabel = document.getElementById('file-sub-label');
+            const dropZone = document.getElementById('drop-zone');
+            const iconContainer = document.getElementById('upload-icon-container');
+
+            label.innerText = 'Seleccionar archivo .CSV';
+            subLabel.innerText = 'Arrastra el archivo o haz clic aquí';
+            subLabel.style.color = "";
+            subLabel.style.fontWeight = "";
+            dropZone.classList.remove('file-selected');
+            iconContainer.innerHTML = '<i class="bi bi-cloud-arrow-up fs-1" style="color: var(--accent-emerald)"></i>';
+        }
+
+        document.getElementById('formImportar').onsubmit = function() {
+            const btn = document.getElementById('btnSubmit');
+            const btnText = document.getElementById('btnText');
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importando datos...';
+
+            Swal.fire({
+                title: 'Procesando archivo',
+                text: 'Esto puede tardar unos segundos dependiendo del tamaño del archivo.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); },
+                background: '#1e293b',
+                color: '#fff'
+            });
+        };
+    </script>
+</th:block>
+</body>
+</html>

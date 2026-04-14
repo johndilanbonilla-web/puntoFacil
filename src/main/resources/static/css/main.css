@@ -1,0 +1,203 @@
+/* ===============================
+   RESET GENERAL
+================================= */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #0f172a;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #e2e8f0;
+}
+
+/* ===============================
+   LAYOUT GENERAL
+================================= */
+.main-content {
+    background-color: #111827;
+    min-height: 100vh;
+    flex: 1;
+    transition: all 0.3s ease;
+}
+
+/* ===============================
+   SIDEBAR
+================================= */
+.sidebar {
+    background: linear-gradient(180deg, #0f172a, #1e293b);
+    min-height: 100vh;
+    width: 250px;
+    padding-top: 20px;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.4);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+/* Estado colapsado */
+.sidebar.collapsed {
+    width: 75px;
+}
+
+/* Ocultar texto cuando colapsa */
+.sidebar.collapsed .menu-text {
+    display: none;
+}
+
+/* Centrar iconos cuando colapsa */
+.sidebar.collapsed .nav-link {
+    text-align: center;
+}
+
+/* Logo */
+.sidebar h4 {
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #22c55e;
+}
+
+/* Links */
+.sidebar .nav-link {
+    color: #cbd5e1;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Hover */
+.sidebar .nav-link:hover {
+    background-color: #22c55e;
+    color: #0f172a;
+    transform: translateX(5px);
+}
+
+/* Activo */
+.sidebar .nav-link.active {
+    background-color: #16a34a;
+    color: #fff;
+}
+
+/* ===============================
+   HEADER
+================================= */
+header {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-bottom: 1px solid #334155;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+header h5 {
+    font-weight: 500;
+}
+
+header strong {
+    color: #22c55e;
+}
+
+/* ===============================
+   CARDS
+================================= */
+.card {
+    background-color: #1e293b;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    color: #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+}
+
+.card h2,
+.card h3,
+.card h4 {
+    color: #22c55e;
+}
+
+/* ===============================
+   BOTONES
+================================= */
+.btn-primary {
+    background-color: #22c55e;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: #16a34a;
+    transform: scale(1.03);
+}
+
+.btn-danger {
+    border-radius: 8px;
+}
+
+/* ===============================
+   TABLAS
+================================= */
+.table {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table thead {
+    background-color: #0f172a;
+    color: #22c55e;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #334155;
+}
+
+/* ===============================
+   FORMULARIOS
+================================= */
+.form-control {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    border-radius: 8px;
+}
+
+.form-control:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 5px #22c55e;
+    background-color: #1e293b;
+    color: #fff;
+}
+
+/* ===============================
+   SCROLL PERSONALIZADO
+================================= */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #22c55e;
+    border-radius: 10px;
+}
+
+/* ===============================
+   TRANSICIONES GENERALES
+================================= */
+* {
+    transition: background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+
+<head>
+    <title>Historial de Ventas - Punto Fácil</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta th:name="_csrf" th:content="${_csrf?.token}"/>
+    <meta th:name="_csrf_header" th:content="${_csrf?.headerName}"/>
+
+    <style>
+        :root {
+            --pf-primary: #3b82f6; /* Azul para diferenciar Ventas de Gastos */
+            --pf-success: #10b981;
+            --pf-dark-bg: #0f172a;
+            --pf-card-bg: #1e293b;
+            --pf-border: #334155;
+            --pf-text-main: #f8fafc;
+        }
+
+        /* Contenedor de tabla estilo Gastos */
+        .table-dark-custom {
+            background: var(--pf-card-bg) !important;
+            border: 1px solid var(--pf-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-dark-custom table {
+            background-color: transparent !important;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-dark-custom thead th {
+            background-color: rgba(15, 23, 42, 0.9) !important;
+            color: var(--pf-primary) !important;
+            border-bottom: 2px solid var(--pf-border) !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 15px 20px;
+        }
+
+        .table-dark-custom td {
+            background-color: var(--pf-card-bg) !important;
+            color: var(--pf-text-main) !important;
+            border-bottom: 1px solid var(--pf-border) !important;
+            vertical-align: middle;
+            padding: 12px 20px;
+            transition: background 0.2s;
+        }
+
+        .table-hover tbody tr:hover td {
+            background-color: #2d3a4f !important;
+        }
+
+        /* Estilo para filas anuladas */
+        .fila-anulada {
+            background-color: rgba(244, 63, 94, 0.05) !important;
+        }
+        .fila-anulada td {
+            opacity: 0.6;
+        }
+        .fila-anulada td:not(.no-strike) {
+            text-decoration: line-through;
+            text-decoration-color: #ef4444;
+        }
+
+        .badge-status {
+            text-decoration: none !important;
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            text-transform: uppercase;
+        }
+
+        .badge-folio {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .form-control-dark {
+            background: #0f172a !important;
+            border: 1px solid var(--pf-border) !important;
+            color: white !important;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0 text-white">Historial de Ventas</h4>
+            <p class="text-muted small mb-0">Registro detallado de transacciones por sucursal.</p>
+        </div>
+        <a th:href="@{/pos}" class="btn btn-success px-4 fw-bold shadow-sm">
+            <i class="bi bi-cart-plus me-2"></i> Nueva Venta
+        </a>
+    </div>
+
+    <div class="card p-3 mb-4" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border);">
+        <form id="formFiltros" th:action="@{/ventas/historial}" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">DESDE</label>
+                <input type="date" id="fechaInicio" name="fechaInicio" th:value="${param.fechaInicio}" class="form-control form-control-dark">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-white small fw-bold">HASTA</label>
+                <input type="date" id="fechaFin" name="fechaFin" th:value="${param.fechaFin}" class="form-control form-control-dark">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-white small fw-bold">CLIENTE / NOMBRE</label>
+                <input type="text" name="cliente" th:value="${param.cliente}" class="form-control form-control-dark" placeholder="Buscar por nombre...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-dark-custom shadow-lg">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th class="ps-4">Folio</th>
+                    <th>Fecha y Hora</th>
+                    <th>Cliente</th>
+                    <th>Total</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center pe-4">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="v : ${ventas}" th:classappend="${v.estado == 'ANULADA'} ? 'fila-anulada' : ''">
+                    <td class="ps-4 no-strike">
+                        <span class="badge badge-folio px-2 py-1" th:text="'#' + ${v.idVenta}"></span>
+                    </td>
+                    <td>
+                        <div class="small">
+                            <span class="fw-bold d-block" th:text="${#temporals.format(v.fechaVenta, 'dd/MM/yyyy')}"></span>
+                            <span class="text-muted" th:text="${#temporals.format(v.fechaVenta, 'HH:mm') + ' hs'}"></span>
+                        </div>
+                    </td>
+                    <td th:text="${v.nombreCliente}"></td>
+                    <td class="fw-bold text-success">
+                        $[[${#numbers.formatDecimal(v.total, 1, 'COMMA', 2, 'POINT')}]]
+                    </td>
+                    <td class="text-center no-strike">
+                        <span th:if="${v.estado == 'COMPLETADA'}" class="badge bg-success-subtle text-success border border-success-subtle badge-status">
+                            Completada
+                        </span>
+                        <span th:if="${v.estado == 'ANULADA'}" class="badge bg-danger-subtle text-danger border border-danger-subtle badge-status">
+                            Anulada
+                        </span>
+                    </td>
+                    <td class="text-center pe-4 no-strike">
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-sm btn-outline-info" title="Imprimir"
+                                    th:onclick="|reimprimirTicket(${v.idVenta})|">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                            <button th:if="${v.estado == 'COMPLETADA'}" class="btn btn-sm btn-outline-danger" title="Anular"
+                                    th:onclick="|confirmarAnulacion(${v.idVenta})|">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(ventas)}">
+                    <td colspan="6" class="text-center py-5 text-muted">No se encontraron ventas.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        // 1. Fechas por defecto (Solo si están vacías)
+        document.addEventListener('DOMContentLoaded', function() {
+            const fechaInicio = document.getElementById('fechaInicio');
+            const fechaFin = document.getElementById('fechaFin');
+            if (!fechaInicio.value || !fechaFin.value) {
+                const hoy = new Date().toISOString().split('T')[0];
+                if (!fechaInicio.value) fechaInicio.value = hoy;
+                if (!fechaFin.value) fechaFin.value = hoy;
+            }
+        });
+
+        // 2. Función de impresión
+        function reimprimirTicket(id) {
+            window.open('/ventas/ticket/' + id, '_blank', 'width=420,height=700');
+        }
+
+        // 3. Lógica de anulación (Adaptada de Gastos para máxima compatibilidad)
+        function confirmarAnulacion(id) {
+            const token = document.querySelector('meta[name="_csrf"]')?.content;
+            const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+            Swal.fire({
+                title: '¿Confirmar Anulación?',
+                text: "Se cancelará la venta #" + id + " y se restaurará el stock.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, anular venta',
+                cancelButtonText: 'Cancelar',
+                background: '#1e293b',
+                color: '#ffffff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Procesando...',
+                        allowOutsideClick: false,
+                        background: '#1e293b',
+                        color: '#fff',
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token && header) headers[header] = token;
+
+                    fetch('/ventas/anular/' + id, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Error en el servidor');
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Venta Anulada!',
+                                    text: data.mensaje,
+                                    background: '#1e293b',
+                                    color: '#fff',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                }).then(() => location.reload());
+                            } else {
+                                throw new Error(data.mensaje);
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al anular',
+                                text: error.message || 'No se pudo completar la operación',
+                                background: '#1e293b',
+                                color: '#fff'
+                            });
+                        });
+                }
+            });
+        }
+    </script>
+</div>
+</body>
+</html>

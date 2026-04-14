@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+
+<head>
+    <title>Dashboard - Punto Fácil</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --success-grad: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --info-grad: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            --warning-grad: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --purple-grad: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+            --danger-grad: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+            --dark-grad: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+            --dark-card: #1f2937;
+            --dark-border: #374151;
+            --dark-text: #f3f4f6;
+            --dark-muted: #9ca3af;
+            --bright-text: #ffffff;
+        }
+
+        .section-title {
+            color: var(--bright-text) !important;
+            font-weight: 800 !important;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 0.85rem;
+        }
+
+        .stat-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--dark-border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-5px); background: #2d3748; }
+        .stat-label { color: var(--dark-muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+        .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--dark-text); }
+
+        .chart-container {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--dark-border);
+            margin-bottom: 2rem;
+            position: relative;
+            height: 350px;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            padding-bottom: 30px;
+        }
+
+        .card-shortcut {
+            border: none;
+            border-radius: 18px;
+            min-height: 110px;
+            display: flex;
+            align-items: center;
+            color: white !important;
+            position: relative;
+            overflow: hidden;
+            padding: 20px;
+            text-decoration: none;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+        .card-shortcut:hover { transform: scale(1.03); filter: brightness(1.1); }
+        .shortcut-icon { font-size: 4rem; opacity: 0.15; position: absolute; right: -5px; bottom: -10px; transform: rotate(-10deg); }
+        .shortcut-text h4 { font-weight: 800; margin: 0; font-size: 1.2rem; }
+
+        .bg-facturar { background: var(--success-grad); }
+        .bg-compras  { background: var(--purple-grad); }
+        .bg-gastos   { background: var(--danger-grad); }
+        .bg-inventario { background: var(--dark-grad); }
+        .bg-caja     { background: var(--info-grad); }
+
+        .text-success-custom { color: #34d399 !important; }
+        .text-info-custom { color: #60a5fa !important; }
+        .text-danger-custom { color: #f87171 !important; }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <span class="stat-label text-success-custom"><i class="bi bi-cash-stack me-2"></i> Ventas Hoy</span>
+                <p class="stat-value text-success-custom">$<span th:text="${totalVentasHoy != null ? #numbers.formatDecimal(totalVentasHoy, 1, 2) : '0.00'}">0.00</span></p>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <span class="stat-label text-info-custom"><i class="bi bi-receipt me-2"></i> Tickets</span>
+                <p class="stat-value text-info-custom" th:text="${conteoVentasHoy ?: 0}">0</p>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <span class="stat-label text-danger-custom"><i class="bi bi-dash-circle me-2"></i> Gastos Hoy</span>
+                <p class="stat-value text-danger-custom">$<span th:text="${totalGastosHoy != null ? #numbers.formatDecimal(totalGastosHoy, 1, 2) : '0.00'}">0.00</span></p>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <span class="stat-label" th:classappend="${cajaAbierta ? 'text-success-custom' : 'text-danger-custom'}">
+                    <i class="bi bi-safe2 me-2"></i> Estado Caja
+                </span>
+                <p class="stat-value"
+                   th:classappend="${cajaAbierta ? 'text-success-custom' : 'text-danger-custom'}"
+                   th:text="${cajaAbierta ? 'ABIERTA' : 'CERRADA'}">
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container shadow-lg">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h6 class="section-title mb-0">Rendimiento Semanal</h6>
+            <span class="badge bg-primary bg-opacity-20 text-info-custom border border-info-custom border-opacity-25">En Vivo</span>
+        </div>
+        <canvas id="ventasChart"></canvas>
+    </div>
+
+    <h6 class="section-title mb-3">Acciones Rápidas</h6>
+    <div class="shortcuts-grid">
+        <a th:href="@{/pos}" class="card-shortcut bg-facturar">
+            <div class="shortcut-text">
+                <h4>Nueva Venta</h4>
+                <p class="mb-0 opacity-75">POS Terminal</p>
+            </div>
+            <i class="bi bi-cart-plus shortcut-icon"></i>
+        </a>
+
+        <a th:href="@{/compras/nuevo}" class="card-shortcut bg-compras">
+            <div class="shortcut-text">
+                <h4>Nueva Compra</h4>
+                <p class="mb-0 opacity-75">Ingreso de Mercancía</p>
+            </div>
+            <i class="bi bi-bag-plus shortcut-icon"></i>
+        </a>
+
+        <a th:href="@{/gastos/nuevo}" class="card-shortcut bg-gastos">
+            <div class="shortcut-text">
+                <h4>Nuevo Gasto</h4>
+                <p class="mb-0 opacity-75">Salida de Caja</p>
+            </div>
+            <i class="bi bi-dash-circle shortcut-icon"></i>
+        </a>
+
+        <a th:href="@{/inventario/mantenimiento}" class="card-shortcut bg-inventario">
+            <div class="shortcut-text">
+                <h4>Inventario</h4>
+                <p class="mb-0 opacity-75">Control de Stock</p>
+            </div>
+            <i class="bi bi-boxes shortcut-icon"></i>
+        </a>
+
+        <a th:href="@{/caja/gestion}" class="card-shortcut bg-caja">
+            <div class="shortcut-text">
+                <h4>Caja</h4>
+                <p class="mb-0 opacity-75">Corte y Arqueo</p>
+            </div>
+            <i class="bi bi-calculator shortcut-icon"></i>
+        </a>
+    </div>
+
+    <script th:inline="javascript">
+        const ventasData = /*[[${ventasSemana}]]*/ [0, 0, 0, 0, 0, 0, 0];
+
+        const ctx = document.getElementById('ventasChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.01)');
+
+        const labels = [];
+        const dias = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            labels.push(dias[d.getDay()]);
+        }
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ventas Diarias ($)',
+                    data: ventasData,
+                    borderColor: '#60a5fa',
+                    borderWidth: 3,
+                    fill: true,
+                    backgroundColor: gradient,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#60a5fa',
+                    pointBorderColor: '#1f2937',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1f2937',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        displayColors: false,
+                        borderColor: '#374151',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: function(value) { return '$' + value; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#9ca3af' }
+                    }
+                }
+            }
+        });
+    </script>
+</div>
+</body>
+</html>

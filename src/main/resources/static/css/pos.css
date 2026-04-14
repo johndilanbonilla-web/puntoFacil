@@ -1,0 +1,138 @@
+/* =========================================================================
+   SISTEMA PUNTO FÁCIL - CONFIGURACIÓN CSS OPTIMIZADA (V2.1 - 2026)
+   ========================================================================= */
+
+body {
+    background-color: #0f172a; /* Un azul más profundo y profesional */
+    color: #e2e8f0;
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+}
+
+/* 1. ETIQUETAS Y FORMULARIOS */
+.form-label, label {
+    color: #94a3b8 !important; /* Un poco más suave para no cansar la vista */
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.form-control, .form-select {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #ffffff !important;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+}
+
+/* 2. FIX DEFINITIVO PARA FOCUS */
+.form-control:focus, .form-select:focus {
+    background-color: #1e293b !important;
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15) !important;
+}
+
+/* 3. INPUTS DE CANTIDAD EN EL CARRITO (NUEVO) */
+.input-cantidad-carrito {
+    background-color: #0f172a !important;
+    border: 1px solid #334155 !important;
+    color: #22c55e !important; /* Color verde para resaltar que es editable */
+    font-weight: 800;
+    text-align: center;
+    border-radius: 6px;
+    width: 70px;
+    padding: 4px;
+    transition: all 0.2s;
+}
+
+.input-cantidad-carrito:focus {
+    border-color: #22c55e !important;
+    outline: none;
+    background-color: #1e293b !important;
+}
+
+/* Quitar flechas molestas de los inputs de número */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* 4. CUADRO DE TOTALES Y RESUMEN DE PAGO (MEJORADO) */
+#totalVentaTexto {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    font-size: 2.8rem !important;
+    letter-spacing: -1px;
+}
+
+/* Bloque de pagos parciales */
+.pago-resumen-box {
+    background: rgba(15, 23, 42, 0.5) !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px;
+}
+
+#totalPagadoTexto {
+    color: #22c55e !important; /* Verde éxito */
+    font-size: 1.1rem;
+}
+
+#totalRestanteTexto {
+    color: #ef4444 !important; /* Rojo vibrante para lo que falta */
+    font-size: 1.1rem;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+/* 5. RESULTADOS DE BÚSQUEDA (CONTRASTE ALTO) */
+#resultados .text-nombre {
+    color: #f8fafc !important; /* Blanco puro */
+    font-weight: 700;
+}
+
+#resultados .text-codigo {
+    color: #3b82f6 !important; /* Azul para resaltar el código de barras */
+    font-weight: 600;
+}
+
+/* 6. BOTONES */
+.btn-green {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    border: none !important;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+.btn-green:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(34, 197, 94, 0.3);
+}
+
+/* 7. INTERRUPTOR DE IMPRESIÓN (DISEÑO CLEAN) */
+.print-switch-container {
+    background: rgba(30, 41, 59, 0.5) !important;
+    border: 1px solid #334155 !important;
+}
+
+.form-check-input:checked {
+    background-color: #22c55e !important;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+/* 8. TABLAS (MÁS ESPACIO) */
+.table-dark-custom td {
+    padding: 12px 8px !important;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+/* Estilo para el botón eliminar en el carrito */
+.btn-delete-item {
+    color: #64748b;
+    transition: color 0.2s;
+}
+.btn-delete-item:hover {
+    color: #ef4444;
+}

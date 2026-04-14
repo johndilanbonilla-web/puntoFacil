@@ -1,0 +1,295 @@
+<th:block xmlns:th="http://www.thymeleaf.org"
+          xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+          layout:decorate="~{layouts/main}">
+
+    <head>
+        <title>Catálogo | PuntoFácil</title>
+        <style>
+            :root {
+                --pf-primary: #10b981;
+                --pf-primary-soft: rgba(16, 185, 129, 0.1);
+                --pf-dark-bg: #0f172a;
+                --pf-card-bg: #1e293b;
+                --pf-border: #334155;
+                --pf-text-main: #f8fafc;
+                --pf-text-muted: #94a3b8;
+                --pf-placeholder: #64748b;
+            }
+
+            /* Evita el parpadeo brusco */
+            #contenedor-dinamico {
+                transition: opacity 0.2s ease-in-out;
+            }
+
+            .loading-state {
+                opacity: 0.5;
+                pointer-events: none;
+            }
+
+            .text-muted { color: var(--pf-text-muted) !important; }
+            .form-control-dark::placeholder {
+                color: var(--pf-placeholder) !important;
+                font-size: 0.9rem;
+                opacity: 1;
+            }
+
+            .table-dark-custom {
+                background: var(--pf-card-bg);
+                border: 1px solid var(--pf-border);
+                border-radius: 16px;
+                overflow: hidden;
+            }
+
+            .table-dark-custom thead th {
+                background-color: rgba(15, 23, 42, 0.6) !important;
+                color: var(--pf-primary) !important;
+                border-bottom: 1px solid var(--pf-border) !important;
+                text-transform: uppercase;
+                font-size: 0.7rem;
+                letter-spacing: 0.1em;
+                padding: 1rem 1.25rem;
+            }
+
+            .table-dark-custom td {
+                background-color: transparent !important;
+                color: var(--pf-text-main) !important;
+                border-bottom: 1px solid var(--pf-border) !important;
+                padding: 0.85rem 1.25rem;
+                vertical-align: middle;
+            }
+
+            .form-control-dark {
+                background: var(--pf-dark-bg) !important;
+                border: 1px solid var(--pf-border) !important;
+                color: white !important;
+            }
+
+            @media (max-width: 768px) {
+                h4 { font-size: 1.2rem !important; }
+                .table-dark-custom thead th { padding: 0.75rem 0.5rem !important; font-size: 0.6rem !important; }
+                .table-dark-custom td { padding: 0.6rem 0.5rem !important; font-size: 0.8rem !important; }
+                .item-name { font-size: 0.85rem !important; line-height: 1.2; }
+                .pagination-container { flex-direction: column; gap: 10px; text-align: center; }
+                .col-clasificacion { display: none !important; }
+            }
+
+            .pagination-container {
+                background: var(--pf-card-bg);
+                border: 1px solid var(--pf-border);
+                border-radius: 12px;
+                padding: 0.75rem 1.25rem;
+            }
+
+            .page-link-custom {
+                background: var(--pf-dark-bg);
+                border: 1px solid var(--pf-border);
+                color: var(--pf-text-muted);
+                padding: 0.4rem 0.8rem;
+                border-radius: 8px;
+                text-decoration: none;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+                cursor: pointer;
+            }
+
+            .page-link-custom:hover:not(:disabled) { border-color: var(--pf-primary); color: var(--pf-primary); }
+            .page-link-custom.active { background: var(--pf-primary); color: white; border-color: var(--pf-primary); }
+            .page-link-custom:disabled { opacity: 0.4; cursor: not-allowed; }
+        </style>
+    </head>
+
+    <div layout:fragment="content">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+                <h4 class="fw-bold mb-0 text-white">Catálogo de Productos</h4>
+                <p class="text-muted small mb-0">Gestión de inventario y servicios.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/productos/importar-view}" class="btn btn-sm btn-outline-light px-3 fw-bold border-slate-700">
+                    <i class="bi bi-file-earmark-arrow-up"></i> <span class="d-none d-sm-inline ms-1">Importar</span>
+                </a>
+                <a th:href="@{/productos/nuevo}" class="btn btn-sm btn-success px-3 fw-bold shadow-lg">
+                    <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline ms-1">Nuevo Ítem</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="card p-2 p-md-3 mb-4 shadow-sm" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border); border-radius: 16px;">
+            <div class="row g-2">
+                <div class="col-md-9 position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="busqueda" class="form-control form-control-dark py-2 ps-5"
+                           placeholder="Buscar por nombre o código..." oninput="cambiarPagina(0)">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-control-dark py-2" id="filtroTipo" onchange="cambiarPagina(0)">
+                        <option value="">Todos los tipos</option>
+                        <option value="1">Producto</option>
+                        <option value="2">Servicio</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="contenedor-dinamico" th:fragment="lista_completa">
+            <div class="table-dark-custom shadow-xl mb-4">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th class="ps-3 ps-md-4">Ítem</th>
+                            <th class="text-center col-clasificacion">Clasificación</th>
+                            <th class="text-center">Precio</th>
+                            <th class="text-center pe-3 pe-md-4">Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tabla-resultados">
+                        <tr th:each="p : ${productos}">
+                            <td class="ps-3 ps-md-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i th:if="${p.esFavorito == 1}" class="bi bi-star-fill text-warning" style="font-size: 0.7rem;"></i>
+                                    <span class="fw-bold text-white item-name" th:text="${p.nombre}"></span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.7rem;">
+                                    <span th:text="${p.familia?.nombre} ?: 'General'"></span>
+                                    <span class="d-md-none"> • </span>
+                                    <span class="d-md-none text-primary" th:text="${p.idTipoProducto == 1 ? 'Producto' : 'Servicio'}"></span>
+                                </div>
+                            </td>
+                            <td class="text-center col-clasificacion">
+                                <span th:if="${p.idTipoProducto == 1}" class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.65rem;">Producto</span>
+                                <span th:if="${p.idTipoProducto == 2}" class="badge rounded-pill bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-size: 0.65rem;">Servicio</span>
+                            </td>
+                            <td class="text-center fw-bold text-success">
+                                $[[${#numbers.formatDecimal(p.precio != null ? p.precio : 0, 1, 2)}]]
+                            </td>
+                            <td class="text-center pe-3 pe-md-4">
+                                <div class="d-flex justify-content-center gap-1">
+                                    <a th:href="@{/productos/editar/{id}(id=${p.idProducto})}" class="btn btn-sm btn-outline-light border-slate-700">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger" th:onclick="'anularProducto(' + ${p.idProducto} + ')'">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(productos)}">
+                            <td colspan="4" class="text-center py-5 text-muted">No se encontraron resultados</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-container d-flex justify-content-between align-items-center" id="contenedor-paginacion">
+                <div class="text-muted small">
+                    <span class="d-none d-md-inline">Mostrando </span>
+                    <span class="text-white fw-bold" th:text="${productos.size()}">0</span> ítems
+                </div>
+                <div class="d-flex gap-1" th:if="${totalPaginas > 1}">
+                    <button class="page-link-custom" th:disabled="${paginaActual == 0}"
+                            th:onclick="'cambiarPagina(' + (${paginaActual} - 1) + ')'">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <button th:each="i : ${#numbers.sequence(0, totalPaginas - 1)}"
+                            th:text="${i + 1}"
+                            th:classappend="${i == paginaActual} ? 'active' : ''"
+                            class="page-link-custom"
+                            th:onclick="'cambiarPagina(' + ${i} + ')'">
+                    </button>
+
+                    <button class="page-link-custom" th:disabled="${paginaActual + 1 >= totalPaginas}"
+                            th:onclick="'cambiarPagina(' + (${paginaActual} + 1) + ')'">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            let timeoutBusqueda = null;
+            let controller = null; // Para abortar peticiones previas
+
+            function cambiarPagina(numPagina) {
+                const contenedor = document.getElementById('contenedor-dinamico');
+
+                // Cancelamos el temporizador si el usuario sigue escribiendo
+                clearTimeout(timeoutBusqueda);
+
+                // Si ya hay una petición en curso, la cancelamos
+                if (controller) {
+                    controller.abort();
+                }
+
+                timeoutBusqueda = setTimeout(() => {
+                    const query = document.getElementById('busqueda').value;
+                    const tipo = document.getElementById('filtroTipo').value;
+
+                    // Indicamos visualmente que estamos cargando
+                    contenedor.classList.add('loading-state');
+
+                    controller = new AbortController();
+                    const signal = controller.signal;
+
+                    const url = `/productos/mantenimiento/fragmento?page=${numPagina}&q=${encodeURIComponent(query)}&tipo=${tipo}`;
+
+                    fetch(url, { signal })
+                        .then(response => {
+                            if (!response.ok) throw new Error("Error en la red");
+                            return response.text();
+                        })
+                        .then(html => {
+                            contenedor.innerHTML = html;
+                            // Quitamos el estado de carga
+                            contenedor.classList.remove('loading-state');
+                        })
+                        .catch(err => {
+                            if (err.name === 'AbortError') {
+                                // Petición cancelada silenciosamente por nueva escritura
+                            } else {
+                                console.error("Error al cargar datos:", err);
+                                contenedor.classList.remove('loading-state');
+                            }
+                        });
+                }, 350); // Tiempo ideal para evitar parpadeos
+            }
+
+            function anularProducto(id) {
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: "No podrás revertir esta acción",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#334155',
+                    confirmButtonText: 'Sí, anular',
+                    background: '#1e293b',
+                    color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`/productos/anular/${id}`, { method: 'POST' })
+                            .then(response => response.text())
+                            .then(res => {
+                                if (res === "OK") {
+                                    cambiarPagina(0);
+                                    Swal.fire({
+                                        title: 'Anulado',
+                                        icon: 'success',
+                                        background: '#1e293b',
+                                        color: '#fff',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    });
+                                }
+                            });
+                    }
+                });
+            }
+        </script>
+        <script th:src="@{/js/mantenimiento.js(v=${version})}"></script>
+    </th:block>
+</th:block>
