@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title layout:title-pattern="$CONTENT_TITLE - Punto Fácil">Punto Fácil</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-bg: #111827;
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 70px;
+            --accent-green: #22c55e;
+            --main-bg: #0f172a;
+            --dark-card: #1f2937;
+            --dark-border: #374151;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--main-bg) !important;
+            color: #f3f4f6;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1100;
+            border-right: 1px solid var(--dark-border);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--dark-border) transparent;
+        }
+
+        .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+
+        .sidebar .nav-link {
+            color: #9ca3af;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            border-radius: 12px;
+            margin: 2px 10px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .sidebar .nav-link i { font-size: 1.2rem; min-width: 30px; }
+
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar .nav-link.active {
+            color: white !important;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        /* --- MENÚ DESPLEGABLE --- */
+        .menu-header {
+            font-size: 0.65rem;
+            color: #6b7280;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 15px 25px 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .menu-header:hover { color: white; }
+        .menu-header i { font-size: 0.75rem; transition: transform 0.3s; }
+        .menu-header.collapsed i { transform: rotate(-90deg); }
+
+        .sidebar.collapsed .menu-text,
+        .sidebar.collapsed .menu-header span,
+        .sidebar.collapsed .menu-header i { display: none; }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 100vh;
+        }
+
+        .sidebar.collapsed + .main-content {
+            margin-left: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
+        }
+
+        header {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--dark-border);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .status-badge {
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .badge-abierta { background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.2); }
+        .badge-cerrada { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+
+        .btn-dark-mode {
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-dark-mode:hover { background: #374151; color: white; }
+
+        /* --- TOAST PROXIMAMENTE --- */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 991px) {
+            .sidebar { left: -100%; }
+            .sidebar.mobile-open { left: 0; width: 280px; }
+            .main-content { margin-left: 0; width: 100%; }
+            .sidebar.collapsed + .main-content { margin-left: 0; width: 100%; }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0, 0, 0, 0.7); z-index: 1050;
+                backdrop-filter: blur(4px);
+            }
+            .overlay.active { display: block; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+<div id="toast-container"></div>
+
+<div class="d-flex">
+    <div id="sidebar" class="sidebar shadow-lg">
+        <div class="p-4 d-flex justify-content-between align-items-center mb-2">
+            <h4 class="m-0 text-white fw-bold d-flex align-items-center">
+                <i class="bi bi-lightning-charge-fill text-success me-2"></i>
+                <span class="menu-text">Punto Fácil</span>
+            </h4>
+            <button class="btn btn-link text-white d-lg-none p-0" onclick="toggleSidebar()">
+                <i class="bi bi-x-lg fs-4"></i>
+            </button>
+        </div>
+
+        <ul class="nav flex-column px-2" id="mainNav">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/dashboard}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span class="menu-text">Inicio</span>
+                </a>
+            </li>
+
+            <div class="menu-header" data-bs-toggle="collapse" data-bs-target="#collapseOps" aria-expanded="true">
+                <span>Operaciones</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="collapseOps">
+                <li class="nav-item"><a class="nav-link" th:href="@{/pos}"><i class="bi bi-cart-plus-fill"></i><span class="menu-text">Nueva Venta</span></a></li>
+                <li class="nav-item"><a class="nav-link link-pendiente" href="javascript:void(0)"><i class="bi bi-bag-plus-fill"></i><span class="menu-text">Nueva Compra</span></a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/gastos/nuevo}"><i class="bi bi-dash-circle-fill"></i><span class="menu-text">Nuevo Gasto</span></a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/caja/gestion}"><i class="bi bi-safe2-fill"></i><span class="menu-text">Caja</span></a></li>
+            </div>
+
+            <div class="menu-header" data-bs-toggle="collapse" data-bs-target="#collapseAdmin" aria-expanded="true">
+                <span>Administración</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="collapseAdmin">
+                <li class="nav-item"><a class="nav-link" th:href="@{/ventas}"><i class="bi bi-journal-text"></i><span class="menu-text">Admin. Ventas</span></a></li>
+                <li class="nav-item"><a class="nav-link link-pendiente" href="javascript:void(0)"><i class="bi bi-cart-check-fill"></i><span class="menu-text">Admin. Compras</span></a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/gastos/lista}"><i class="bi bi-wallet2"></i><span class="menu-text">Admin. Gastos</span></a></li>
+            </div>
+
+            <div class="menu-header" data-bs-toggle="collapse" data-bs-target="#collapseControl" aria-expanded="true">
+                <span>Control</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="collapseControl">
+                <li class="nav-item"><a class="nav-link" th:href="@{/inventario/mantenimiento}"><i class="bi bi-box-seam-fill"></i><span class="menu-text">Inventario</span></a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/productos/mantenimiento}"><i class="bi bi-tags-fill"></i><span class="menu-text">Productos</span></a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/usuarios/mantenimiento}"><i class="bi bi-people-fill"></i><span class="menu-text">Usuarios</span></a></li>
+            </div>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-dark-mode me-2 me-md-3 rounded-circle" onclick="toggleSidebar()" style="width: 40px; height: 40px;">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <div class="border-start border-secondary ps-2 ps-md-3">
+                    <div id="headerCajaStatus">
+                        <span class="status-badge badge-cerrada fw-bold">...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="btn btn-dark-mode rounded-pill px-2 px-md-3 dropdown-toggle shadow-sm" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle text-success me-0 me-md-2"></i>
+                    <span class="small fw-bold d-none d-sm-inline" th:text="${#authentication.name}">Admin</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 p-2 bg-dark">
+                    <li>
+                        <a class="dropdown-item py-2 text-white rounded-3 mb-1" th:href="@{/usuarios/perfil}">
+                            <i class="bi bi-person-badge me-2 text-primary"></i>Mi Perfil
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li>
+                        <form th:action="@{/logout}" method="post" class="m-0">
+                            <button type="submit" class="dropdown-item py-2 text-danger rounded-3 w-100 text-start border-0 bg-transparent">
+                                <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </header>
+
+        <div class="container-fluid py-4">
+            <div layout:fragment="content"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<th:block layout:fragment="scripts"></th:block>
+
+<script>
+    // Sincronización de estado de caja
+    async function checkCajaHeader() {
+        const container = document.getElementById('headerCajaStatus');
+        if(!container) return;
+        try {
+            const res = await fetch('/caja/estado');
+            const data = await res.json();
+            if (data && data.activa) {
+                container.innerHTML = `<span class="status-badge badge-abierta fw-bold">
+                    <i class="bi bi-circle-fill me-1" style="font-size: 0.4rem"></i> ABIERTA
+                </span>`;
+            } else {
+                container.innerHTML = `<span class="status-badge badge-cerrada fw-bold">CERRADA</span>`;
+            }
+        } catch (e) {
+            container.innerHTML = `<span class="status-badge badge-cerrada fw-bold text-uppercase" style="font-size: 0.55rem">Offline</span>`;
+        }
+    }
+
+    // Marca el link activo y expande su categoría
+    function setActiveLink() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('#mainNav .nav-link');
+
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            const normalizedPath = currentPath.replace(/\/$/, "");
+            const normalizedHref = href.replace(/\/$/, "");
+
+            if (normalizedPath === normalizedHref || (normalizedHref !== '/dashboard' && normalizedPath.startsWith(normalizedHref))) {
+                link.classList.add('active');
+                const parentCollapse = link.closest('.collapse');
+                if (parentCollapse) {
+                    parentCollapse.classList.add('show');
+                    const header = document.querySelector(`[data-bs-target="#${parentCollapse.id}"]`);
+                    if (header) {
+                        header.classList.remove('collapsed');
+                    }
+                }
+            }
+        });
+    }
+
+    // Manejo de Sidebar
+    function toggleSidebar() {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("overlay");
+        if (window.innerWidth <= 991) {
+            sidebar.classList.toggle("mobile-open");
+            overlay.classList.toggle("active");
+        } else {
+            sidebar.classList.toggle("collapsed");
+        }
+    }
+
+    // Función para mostrar aviso de proximamente
+    function mostrarAvisoProximamente() {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            background: #1e293b;
+            border-left: 4px solid #3b82f6;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        `;
+
+        toast.innerHTML = `
+            <i class="bi bi-info-circle-fill text-primary"></i>
+            <div>
+                <div class="fw-bold small">Módulo en Desarrollo</div>
+                <div style="font-size: 0.75rem; opacity: 0.7;">Esta función estará disponible próximamente.</div>
+            </div>
+        `;
+
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        checkCajaHeader();
+        setInterval(checkCajaHeader, 30000);
+        setActiveLink();
+
+        // Escuchar clics en links pendientes
+        document.querySelectorAll('.link-pendiente').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                mostrarAvisoProximamente();
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
