@@ -12,11 +12,11 @@
 
     <style>
         :root {
-            --pf-primary: #10b981;
+            --pf-primary: #10b981; /* Verde (para botones) */
             --pf-dark-bg: #0f172a;
             --pf-card-bg: #1e293b;
             --pf-border: #334155;
-            --pf-text-main: #f8fafc;
+            --pf-text-main: #ffffff; /* Forzado a blanco puro */
         }
 
         .table-dark-custom {
@@ -31,43 +31,44 @@
             margin-bottom: 0;
             border-collapse: separate;
             border-spacing: 0;
+            width: 100%;
         }
 
         .table-dark-custom thead th {
             background-color: rgba(15, 23, 42, 0.9) !important;
-            color: var(--pf-primary) !important;
+            color: #38bdf8 !important; /* Azul claro para los encabezados para contrastar */
             border-bottom: 2px solid var(--pf-border) !important;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.05em;
+            padding: 15px 20px;
         }
 
         .table-dark-custom tfoot td {
             background-color: rgba(15, 23, 42, 0.5) !important;
             border-top: 2px solid var(--pf-border) !important;
-            color: var(--pf-primary) !important;
+            color: #ffffff !important; /* Total en blanco puro */
             font-weight: bold;
         }
 
         .table-dark-custom td {
             background-color: var(--pf-card-bg) !important;
-            color: var(--pf-text-main) !important;
+            color: #ffffff !important; /* Texto de celdas forzado a blanco */
             border-bottom: 1px solid var(--pf-border) !important;
             vertical-align: middle;
             transition: background 0.2s;
+            padding: 12px 20px;
         }
 
         .table-hover tbody tr:hover td {
             background-color: #2d3a4f !important;
         }
 
-        .gasto-anulado {
-            background-color: rgba(244, 63, 94, 0.05) !important;
-        }
-
+        /* Mejor legibilidad en anulados */
         .gasto-anulado td {
-            opacity: 0.6;
-            filter: grayscale(0.5);
+            background-color: rgba(244, 63, 94, 0.05) !important;
+            opacity: 0.85; /* Aumentado para que no se pierda el texto blanco */
+            filter: grayscale(0.2);
         }
 
         .gasto-anulado td:not(.no-strike) {
@@ -89,6 +90,10 @@
             color: white !important;
         }
 
+        .form-control-dark::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important; /* Placeholder blanco transparente */
+        }
+
         input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1);
             cursor: pointer;
@@ -97,116 +102,188 @@
         .x-small {
             font-size: 0.7rem;
         }
+
+        /* =========================================================
+           MAGIA RESPONSIVA: TABLE TO CARDS (MÓVIL SIN SCROLL)
+           ========================================================= */
+        @media (max-width: 768px) {
+            #formFiltros > div { margin-bottom: 15px; }
+
+            .table-dark-custom { border: none !important; background: transparent !important; }
+            .table-dark-custom table, .table-dark-custom tbody { display: block; width: 100%; }
+            .table-dark-custom thead { display: none; }
+
+            .table-dark-custom tr {
+                display: block;
+                background: var(--pf-card-bg) !important;
+                border: 1px solid var(--pf-border);
+                border-radius: 12px;
+                margin-bottom: 1.2rem;
+                padding: 0;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            }
+
+            .table-dark-custom td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 15px !important;
+                text-align: right;
+                border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+            }
+
+            .table-dark-custom td:last-child { border-bottom: none !important; justify-content: flex-end; }
+
+            /* Etiquetas generadas en celular (Data-labels) */
+            .table-dark-custom td::before {
+                content: attr(data-label);
+                font-size: 0.7rem;
+                font-weight: bold;
+                color: #38bdf8; /* Azul claro para que contraste con el valor blanco */
+                text-transform: uppercase;
+                margin-right: 15px;
+                text-align: left;
+            }
+
+            .table-dark-custom td:first-child {
+                justify-content: flex-start;
+                background: rgba(15, 23, 42, 0.4) !important;
+                border-radius: 12px 12px 0 0;
+                border-bottom: 1px solid var(--pf-border) !important;
+            }
+
+            .table-dark-custom td:first-child::before { display: none; }
+
+            /* Adaptación del TFOOT (Total) para móvil */
+            .table-dark-custom tfoot { display: block; width: 100%; }
+            .table-dark-custom tfoot tr { background: transparent !important; border: none !important; box-shadow: none !important;}
+            .table-dark-custom tfoot td {
+                display: flex;
+                justify-content: space-between;
+                background: rgba(16, 185, 129, 0.1) !important;
+                border: 1px solid var(--pf-primary) !important;
+                border-radius: 12px;
+                padding: 15px !important;
+                color: #ffffff !important; /* Total en blanco puro */
+            }
+            .table-dark-custom tfoot td:empty, .table-dark-custom tfoot td[colspan="5"] { display: none !important; }
+            .table-dark-custom tfoot td::before { content: "TOTAL ACTIVOS:"; display: block !important; color: #38bdf8;}
+        }
     </style>
 </head>
 
 <body>
-<div layout:fragment="content">
+<div layout:fragment="content" class="container-fluid py-3 px-2 px-md-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
             <h4 class="fw-bold mb-0 text-white">Historial de Gastos</h4>
-            <p class="text-muted small mb-0">Visualiza y gestiona las salidas de efectivo.</p>
+            <p class="text-white opacity-75 small mb-0">Visualiza y gestiona las salidas de efectivo.</p>
         </div>
         <a th:href="@{/gastos/nuevo}" class="btn btn-success px-4 fw-bold shadow-sm">
             <i class="bi bi-plus-lg me-2"></i> Nuevo Gasto
         </a>
     </div>
 
-    <div class="card p-3 mb-4" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border);">
-        <form th:action="@{/gastos/lista}" method="get" class="row g-3 align-items-end">
-            <div class="col-md-3">
+    <div class="card p-3 p-md-4 mb-4 shadow-sm" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border); border-radius: 16px;">
+        <form id="formFiltros" th:action="@{/gastos/lista}" method="get" class="row g-3 align-items-end">
+            <div class="col-12 col-md-3">
                 <label class="form-label text-white small fw-bold">DESDE</label>
-                <input type="date" name="desde" th:value="${fechaDesde}" class="form-control form-control-dark">
+                <input type="date" name="desde" th:value="${fechaDesde}" class="form-control form-control-dark py-2">
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-3">
                 <label class="form-label text-white small fw-bold">HASTA</label>
-                <input type="date" name="hasta" th:value="${fechaHasta}" class="form-control form-control-dark">
+                <input type="date" name="hasta" th:value="${fechaHasta}" class="form-control form-control-dark py-2">
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100 fw-bold">
+            <div class="col-12 col-md-4">
+                <label class="form-label text-white small fw-bold">BUSCAR</label>
+                <div class="position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-white opacity-50"></i>
+                    <input type="text" class="form-control form-control-dark py-2 ps-5" id="filterInput" placeholder="Concepto, detalle o monto...">
+                </div>
+            </div>
+            <div class="col-12 col-md-2 mt-3 mt-md-0">
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
                     <i class="bi bi-funnel"></i> Filtrar
                 </button>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label text-white small fw-bold">BUSCAR</label>
-                <input type="text" class="form-control form-control-dark" id="filterInput" placeholder="Concepto, detalle o monto...">
             </div>
         </form>
     </div>
 
-    <div class="table-dark-custom shadow-lg">
-        <table class="table table-hover" id="gastosTable">
-            <thead>
-            <tr>
-                <th class="ps-4">Fecha</th>
-                <th>Concepto</th>
-                <th>Estado</th>
-                <th>Pago</th>
-                <th>Detalle</th>
-                <th class="text-end">Monto</th>
-                <th class="text-center">Acciones</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="g : ${gastos}" th:classappend="${g.activo == false ? 'gasto-anulado' : ''}">
-                <td class="ps-4 small" th:text="${g.fecha != null ? #temporals.format(g.fecha, 'dd/MM/yyyy HH:mm') : '---'}"></td>
+    <div class="table-dark-custom shadow-lg mb-4">
+        <div>
+            <table class="table table-hover" id="gastosTable">
+                <thead>
+                <tr>
+                    <th class="ps-4">Fecha</th>
+                    <th>Concepto</th>
+                    <th class="text-center">Estado</th>
+                    <th>Pago</th>
+                    <th>Detalle</th>
+                    <th class="text-end text-md-start">Monto</th>
+                    <th class="text-center pe-4">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="g : ${gastos}" th:classappend="${g.activo == false ? 'gasto-anulado' : ''}">
+                    <td class="ps-4 small fw-bold text-white" data-label="Fecha" th:text="${g.fecha != null ? #temporals.format(g.fecha, 'dd/MM/yyyy HH:mm') : '---'}"></td>
 
-                <td class="fw-bold" th:text="${g.nombreProducto}"></td>
+                    <td class="fw-semibold text-white text-end text-md-start" data-label="Concepto" th:text="${g.nombreProducto}"></td>
 
-                <td class="no-strike">
-                    <span th:if="${g.activo}" class="badge bg-success-subtle text-success border border-success-subtle badge-status">Activo</span>
-                    <span th:if="${!g.activo}" class="badge bg-danger-subtle text-danger border border-danger-subtle badge-status">Anulado</span>
-                </td>
+                    <td class="text-center text-md-center no-strike" data-label="Estado">
+                        <span th:if="${g.activo}" class="badge bg-success bg-opacity-25 text-white border border-success border-opacity-50 badge-status px-2 py-1">Activo</span>
+                        <span th:if="${!g.activo}" class="badge bg-danger bg-opacity-25 text-white border border-danger border-opacity-50 badge-status px-2 py-1">Anulado</span>
+                    </td>
 
-                <td>
-                    <span class="badge bg-dark border border-secondary" th:text="${g.nombreFormaPago}"></span>
-                    <div th:if="${g.nombreBanco}" class="x-small text-info mt-1">
-                        <i class="bi bi-bank me-1"></i><span th:text="${g.nombreBanco}"></span>
-                    </div>
-                </td>
+                    <td data-label="Pago" class="text-end text-md-start text-white">
+                        <span class="badge bg-dark border border-secondary text-white" th:text="${g.nombreFormaPago}"></span>
+                        <div th:if="${g.nombreBanco}" class="x-small text-info mt-1 text-end text-md-start">
+                            <i class="bi bi-bank me-1"></i><span th:text="${g.nombreBanco}"></span>
+                        </div>
+                    </td>
 
-                <td class="small text-muted italic" th:text="${g.descripcion}"></td>
+                    <td class="small text-white opacity-75 fst-italic text-end text-md-start" data-label="Detalle" th:text="${g.descripcion}"></td>
 
-                <td class="text-end fw-bold text-white">
-                    $<span th:text="${#numbers.formatDecimal(g.monto, 1, 2, 'POINT')}"></span>
-                </td>
+                    <td class="text-end text-md-start fw-bold text-white fs-6" data-label="Monto">
+                        $<span th:text="${#numbers.formatDecimal(g.monto, 1, 2, 'POINT')}"></span>
+                    </td>
 
-                <td class="text-center no-strike">
-                    <div class="d-flex justify-content-center gap-2">
-                        <button class="btn btn-sm btn-outline-info" title="Imprimir"
-                                th:onclick="'imprimirGasto(' + ${g.id_gasto ?: g.idGasto} + ')'">
-                            <i class="bi bi-printer"></i>
-                        </button>
-                        <button th:if="${g.activo}" class="btn btn-sm btn-outline-danger" title="Anular"
-                                th:onclick="'confirmarAnulacion(' + ${g.id_gasto ?: g.idGasto} + ')'">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr id="noResultsRow" style="display: none;">
-                <td colspan="7" class="text-center py-5 text-muted">
-                    <i class="bi bi-search me-2"></i> No coinciden resultados con tu búsqueda.
-                </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(gastos)}">
-                <td colspan="7" class="text-center py-5 text-muted">
-                    <i class="bi bi-info-circle me-2"></i> No se encontraron gastos en este rango de fechas.
-                </td>
-            </tr>
-            </tbody>
+                    <td class="text-center text-md-center pe-4 no-strike" data-label="Acciones">
+                        <div class="d-flex justify-content-end justify-content-md-center gap-2">
+                            <button class="btn btn-sm" style="background: #0f172a; border: 1px solid var(--pf-border); color: #38bdf8;" title="Imprimir"
+                                    th:onclick="'imprimirGasto(' + ${g.id_gasto ?: g.idGasto} + ')'">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                            <button th:if="${g.activo}" class="btn btn-sm" style="background: #0f172a; border: 1px solid var(--pf-border); color: #ef4444;" title="Anular"
+                                    th:onclick="'confirmarAnulacion(' + ${g.id_gasto ?: g.idGasto} + ')'">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="noResultsRow" style="display: none;">
+                    <td colspan="7" class="text-center py-5 text-white opacity-50">
+                        <i class="bi bi-search me-2 fs-3 d-block mb-2"></i> No coinciden resultados con tu búsqueda local.
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(gastos)}">
+                    <td colspan="7" class="text-center py-5 text-white opacity-50">
+                        <i class="bi bi-info-circle me-2 fs-3 d-block mb-2"></i> No se encontraron gastos en este rango de fechas.
+                    </td>
+                </tr>
+                </tbody>
 
-            <tfoot th:if="${not #lists.isEmpty(gastos)}">
-            <tr>
-                <td colspan="5" class="text-end ps-4">TOTAL GASTOS ACTIVOS:</td>
-                <td class="text-end fw-bold">
-                    $<span th:text="${#numbers.formatDecimal(#aggregates.sum(gastos.?[activo == true].![monto]) ?: 0, 1, 2, 'POINT')}">0.00</span>
-                </td>
-                <td></td>
-            </tr>
-            </tfoot>
-        </table>
+                <tfoot th:if="${not #lists.isEmpty(gastos)}">
+                <tr>
+                    <td colspan="5" class="text-end ps-4 text-white">TOTAL GASTOS ACTIVOS:</td>
+                    <td class="text-end fw-bold fs-5 text-white">
+                        $<span th:text="${#numbers.formatDecimal(#aggregates.sum(gastos.?[activo == true].![monto]) ?: 0, 1, 2, 'POINT')}">0.00</span>
+                    </td>
+                    <td></td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 
     <script th:inline="javascript">

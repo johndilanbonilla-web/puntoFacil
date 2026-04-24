@@ -2,6 +2,8 @@ package com.puntofacil.puntofacilbackend.controller;
 
 import com.puntofacil.puntofacilbackend.entity.Usuario;
 import com.puntofacil.puntofacilbackend.service.UsuarioService;
+import com.puntofacil.puntofacilbackend.repository.RolRepository;
+import com.puntofacil.puntofacilbackend.repository.SucursalRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -14,24 +16,29 @@ import java.security.Principal;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final RolRepository rolRepository;       // Inyectado para el combo box
+    private final SucursalRepository sucursalRepository; // Inyectado para el combo box
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService,
+                             RolRepository rolRepository,
+                             SucursalRepository sucursalRepository) {
         this.usuarioService = usuarioService;
+        this.rolRepository = rolRepository;
+        this.sucursalRepository = sucursalRepository;
     }
 
     /**
-     * Vista de Perfil: Muestra los datos del usuario que tiene la sesión activa.
+     * Vista de Perfil
      */
     @GetMapping("/perfil")
     public String verPerfil(Model model, Principal principal) {
-        // principal.getName() obtiene el 'username' del usuario autenticado
         Usuario usuario = usuarioService.buscarPorUsername(principal.getName());
         model.addAttribute("usuario", usuario);
         return "usuarios/perfil";
     }
 
     /**
-     * Vista principal: Tabla de empleados (Mantenimiento).
+     * Vista principal (Mantenimiento)
      */
     @GetMapping("/mantenimiento")
     public String mantenimiento(Model model) {
@@ -40,24 +47,31 @@ public class UsuarioController {
     }
 
     /**
-     * Formulario para crear un nuevo usuario.
+     * Formulario para nuevo usuario
      */
     @GetMapping("/nuevo")
-    public String nuevo(Model model) {
-        // Evitamos sobreescribir si ya viene un objeto del error en 'guardar'
+    public String nuevo(Model model, Principal principal) {
         if (!model.containsAttribute("usuario")) {
             model.addAttribute("usuario", new Usuario());
         }
+
+        // CARGA DE LISTAS MAESTRAS
+        cargarListasMaestras(model, principal);
+
         return "usuarios/formulario";
     }
 
     /**
-     * Formulario para editar un usuario existente.
+     * Formulario para editar usuario
      */
     @GetMapping("/editar/{id}")
-    public String editar(@PathVariable Long id, Model model, RedirectAttributes flash) {
+    public String editar(@PathVariable Long id, Model model, RedirectAttributes flash, Principal principal) {
         try {
             model.addAttribute("usuario", usuarioService.buscarPorId(id));
+
+            // CARGA DE LISTAS MAESTRAS
+            cargarListasMaestras(model, principal);
+
             return "usuarios/formulario";
         } catch (RuntimeException e) {
             flash.addFlashAttribute("error", "Usuario no encontrado.");
@@ -66,9 +80,17 @@ public class UsuarioController {
     }
 
     /**
-     * Procesa el guardado.
-     * Si ocurre un error, devuelve al usuario al formulario correcto (nuevo o edición).
+     * Método privado para no repetir código en 'nuevo' y 'editar'
      */
+    private void cargarListasMaestras(Model model, Principal principal) {
+        // Obtenemos los datos del administrador logueado para filtrar sucursales por su empresa
+        Usuario adminLogueado = usuarioService.buscarPorUsername(principal.getName());
+
+        model.addAttribute("roles", rolRepository.findAll());
+        // Filtramos sucursales para que solo vea las de su propia empresa (ID 1, 2, etc.)
+        model.addAttribute("sucursales", sucursalRepository.findByIdEmpresaAndActivo(adminLogueado.getIdEmpresa(), 1));
+    }
+
     @PostMapping("/guardar")
     public String guardar(@ModelAttribute Usuario usuario, RedirectAttributes flash) {
         try {
@@ -76,14 +98,11 @@ public class UsuarioController {
             flash.addFlashAttribute("success", "Usuario procesado exitosamente.");
             return "redirect:/usuarios/mantenimiento";
         } catch (RuntimeException e) {
-            flash.addFlashAttribute("error", "No se pudo guardar: " + e.getMessage());
-            flash.addFlashAttribute("usuario", usuario); // Mantenemos los datos ingresados
-
-            // Decidimos a qué vista regresar según si el ID ya existe
-            if (usuario.getIdUsuario() != null) {
-                return "redirect:/usuarios/editar/" + usuario.getIdUsuario();
-            }
-            return "redirect:/usuarios/nuevo";
+            flash.addFlashAttribute("error", "Error: " + e.getMessage());
+            flash.addFlashAttribute("usuario", usuario);
+            return (usuario.getIdUsuario() != null)
+                    ? "redirect:/usuarios/editar/" + usuario.getIdUsuario()
+                    : "redirect:/usuarios/nuevo";
         }
     }
 }

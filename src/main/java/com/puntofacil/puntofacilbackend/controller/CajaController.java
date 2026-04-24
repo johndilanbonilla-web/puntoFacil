@@ -8,7 +8,6 @@ import com.puntofacil.puntofacilbackend.service.CajaService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,9 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/caja")
@@ -33,9 +30,9 @@ public class CajaController {
     @Autowired
     private CajaService cajaService;
 
-    // =========================
-    // VISTA: GESTIÓN
-    // =========================
+    // ==========================================
+    // VISTA: GESTIÓN (HISTORIAL)
+    // ==========================================
     @GetMapping("/gestion")
     public String verGestion(
             @RequestParam(name = "fInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fInicio,
@@ -45,203 +42,149 @@ public class CajaController {
 
         try {
             Integer idEmpresa = getEmpresaId(session);
+            LocalDate inicio = (fInicio != null) ? fInicio : LocalDate.now().minusDays(30);
+            LocalDate fin = (fFin != null) ? fFin : LocalDate.now();
 
-            LocalDateTime inicio = (fInicio != null)
-                    ? fInicio.atStartOfDay()
-                    : LocalDate.now().minusDays(30).atStartOfDay();
-
-            LocalDateTime fin = (fFin != null)
-                    ? fFin.atTime(23, 59, 59)
-                    : LocalDateTime.now();
-
-            List<CajaSesion> sesiones = sesionRepo.buscarSesionesHistoricas(idEmpresa, sucursal, inicio, fin);
+            // El Service ahora se encarga de devolver la lista y llenar los Transientes
+            List<CajaSesion> sesiones = cajaService.obtenerHistorialGestion(idEmpresa, sucursal, inicio, fin);
 
             model.addAttribute("sesiones", sesiones);
-            model.addAttribute("fInicio", fInicio);
-            model.addAttribute("fFin", fFin);
-            model.addAttribute("sucursalSeleccionada", sucursal);
+            model.addAttribute("fInicio", inicio);
+            model.addAttribute("fFin", fin);
 
             return "caja/gestion";
-
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             return "redirect:/login?error=session_expired";
         }
     }
 
-    // =========================
-    // VISTA: DETALLE SESIÓN
-    // =========================
+    // ==========================================
+    // VISTA: DETALLE DE AUDITORÍA
+    // ==========================================
     @GetMapping("/detalle/{id}")
-    public String verDetalleSesion(@PathVariable("id") Integer id, Model model, HttpSession session) {
-
+    public String verDetalleAuditoria(@PathVariable("id") Integer id, Model model, HttpSession session) {
         try {
             Integer idEmpresa = getEmpresaId(session);
-
             CajaSesion sesion = sesionRepo.findById(id)
                     .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
 
-            if (!sesion.getIdEmpresa().equals(idEmpresa)) {
-                return "redirect:/caja/gestion?error=access_denied";
-            }
+            if (!sesion.getIdEmpresa().equals(idEmpresa)) return "redirect:/caja/gestion";
 
-            // 1. Obtener todos los movimientos
-            List<CajaMovimiento> movimientos = movimientoRepo
-                    .findByIdSesionOrderByFechaMovimientoDesc(id);
+            // 1. Resumen de métodos de pago
+            List<Map<String, Object>> resumenPagos = movimientoRepo.obtenerResumenVentasPorMetodo(id);
 
-            // 2. Resumen de Ventas por Método (Para tarjetas informativas)
-            List<Map<String, Object>> resumenPagos = movimientoRepo
-                    .obtenerResumenVentasPorMetodo(id);
+            // 2. Usar el Service para calcular el arqueo oficial (Centralización de lógica)
+            BigDecimal montoEsperado = cajaService.calcularEfectivoEsperado(sesion);
 
-            // 3. Calcular Total Ventas
-            BigDecimal totalVentas = resumenPagos.stream()
-                    .map(m -> convertirABigDecimal(m.get("total")))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // Ya que CierreReal puede ser nulo si la caja sigue abierta
+            BigDecimal realCierre = sesion.getMontoCierreReal() != null ? sesion.getMontoCierreReal() : BigDecimal.ZERO;
+            BigDecimal diferencia = realCierre.subtract(montoEsperado);
 
-            // 4. Agrupar movimientos de INGRESO por método (Para el acordeón detallado)
-            Map<String, List<CajaMovimiento>> detallePorMetodo = movimientos.stream()
-                    .filter(m -> "INGRESO".equalsIgnoreCase(m.getTipoMovimiento()))
-                    .collect(Collectors.groupingBy(m -> {
-                        String metodo = m.getMetodoPago();
-                        return (metodo != null && !metodo.isEmpty()) ? metodo : "OTROS";
-                    }));
+            // 3. Separar movimientos para la vista
+            List<CajaMovimiento> movimientos = movimientoRepo.findByIdSesion(id);
+            List<CajaMovimiento> ventasSesion = movimientos.stream()
+                    .filter(m -> "INGRESO".equals(m.getTipoMovimiento())).toList();
+            List<CajaMovimiento> gastosSesion = movimientos.stream()
+                    .filter(m -> "EGRESO".equals(m.getTipoMovimiento())).toList();
 
-            // 5. NUEVO: Calcular los totales por grupo en Java para evitar error SpEL en Thymeleaf
-            Map<String, BigDecimal> totalesPorMetodo = detallePorMetodo.entrySet().stream()
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.getValue().stream()
-                                    .map(CajaMovimiento::getMonto)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                    ));
-
-            // 6. NUEVO: Calcular diferencia de cierre
-            BigDecimal real = sesion.getMontoCierreReal() != null ? sesion.getMontoCierreReal() : BigDecimal.ZERO;
-            BigDecimal esperado = sesion.getMontoCierreSistema() != null ? sesion.getMontoCierreSistema() : BigDecimal.ZERO;
-            BigDecimal diferencia = real.subtract(esperado);
-
-            // Inyección al modelo
+            // 4. Inyectar al HTML (Asegurar compatibilidad con el Dark Mode)
             model.addAttribute("sesion", sesion);
-            model.addAttribute("movimientos", movimientos);
+            model.addAttribute("totalVentas", sesionRepo.sumTotalVentasBySesion(id)); // BigDecimal
+            model.addAttribute("totalGastos", sesionRepo.sumTotalGastosBySesion(id).add(sesionRepo.sumTotalComprasBySesion(id)));
             model.addAttribute("resumenPagos", resumenPagos);
-            model.addAttribute("totalVentas", totalVentas);
-            model.addAttribute("detallePorMetodo", detallePorMetodo);
-            model.addAttribute("totalesPorMetodo", totalesPorMetodo); // Mapa de totales listo
-            model.addAttribute("diferenciaCierre", diferencia);      // Diferencia lista
+            model.addAttribute("ventasSesion", ventasSesion);
+            model.addAttribute("gastosSesion", gastosSesion);
+            model.addAttribute("montoEsperado", montoEsperado);
+            model.addAttribute("diferenciaCierre", diferencia);
 
             return "caja/detalle_sesion";
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return "redirect:/caja/gestion";
+            return "redirect:/caja/gestion?error=not_found";
         }
     }
 
-    // =========================
-    // API: ESTADO
-    // =========================
+    // ==========================================
+    // API ENDPOINTS (Axios / Fetch desde el Frontend)
+    // ==========================================
     @GetMapping("/estado")
     @ResponseBody
-    public ResponseEntity<?> verificarEstado(HttpSession session) {
+    public ResponseEntity<?> obtenerEstadoCaja(HttpSession session) {
         try {
             Integer idEmpresa = getEmpresaId(session);
-            Map<String, Object> res = new HashMap<>();
+            Integer idUsuario = getUsuarioId(session);
+            Optional<CajaSesion> sesionOpt = cajaService.obtenerSesionActiva(idEmpresa, idUsuario);
 
-            cajaService.obtenerSesionActiva(idEmpresa).ifPresentOrElse(
-                    s -> {
-                        res.put("activa", true);
-                        res.put("sesion", s);
-                    },
-                    () -> res.put("activa", false)
-            );
+            if (sesionOpt.isPresent()) {
+                CajaSesion sesion = sesionOpt.get();
+                BigDecimal ventas = sesionRepo.sumTotalVentasBySesion(sesion.getIdSesion());
+                BigDecimal gastos = sesionRepo.sumTotalGastosBySesion(sesion.getIdSesion());
 
-            return ResponseEntity.ok(res);
+                // EL DATO CLAVE:
+                BigDecimal efectivoEsperado = cajaService.calcularEfectivoEsperado(sesion);
+
+                return ResponseEntity.ok(Map.of(
+                        "activa", true,
+                        "sesion", Map.of(
+                                "idSesion", sesion.getIdSesion(),
+                                "montoApertura", sesion.getMontoApertura(),
+                                "totalVentas", ventas,
+                                "totalGastos", gastos,
+                                "efectivoEsperado", efectivoEsperado // <-- Enviamos esto al JS
+                        )
+                ));
+            }
+            return ResponseEntity.ok(Map.of("activa", false));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // =========================
-    // API: ABRIR CAJA
-    // =========================
     @PostMapping("/abrir")
     @ResponseBody
     public ResponseEntity<?> abrirCaja(@RequestBody Map<String, Object> datos, HttpSession session) {
         try {
-            Integer idEmpresa = getEmpresaId(session);
-            Integer idUsuario = getUsuarioId(session);
-
-            if (cajaService.tieneSesionActiva(idEmpresa)) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Ya existe una sesión abierta."));
-            }
-
-            BigDecimal montoInicial = convertirABigDecimal(datos.get("monto_apertura"));
-
             CajaSesion nueva = new CajaSesion();
-            nueva.setIdEmpresa(idEmpresa);
+            nueva.setIdEmpresa(getEmpresaId(session));
             nueva.setIdSucursal(getSucursalId(session));
-            nueva.setIdUsuario(idUsuario);
-            nueva.setFechaApertura(LocalDateTime.now());
-            nueva.setMontoApertura(montoInicial);
-            nueva.setEstado("ABIERTA");
-            nueva.setIdCaja(1);
+            nueva.setIdUsuario(getUsuarioId(session));
+            nueva.setIdCaja(1); // O tomar del DTO si manejas múltiples cajas físicas
+            nueva.setMontoApertura(parseToBigDecimal(datos.get("monto_apertura")));
 
-            return ResponseEntity.ok(sesionRepo.save(nueva));
+            // DELEGACIÓN: El Service se encarga de guardar y crear el movimiento de auditoría
+            CajaSesion sesionAbierta = cajaService.abrirCaja(nueva);
+
+            return ResponseEntity.ok(sesionAbierta);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("error", "Error interno al abrir la caja."));
         }
     }
 
-    // =========================
-    // API: CERRAR CAJA
-    // =========================
     @PostMapping("/cerrar")
     @ResponseBody
     public ResponseEntity<?> cerrarCaja(@RequestBody Map<String, Object> datos, HttpSession session) {
         try {
             Integer idEmpresa = getEmpresaId(session);
-            BigDecimal montoReal = convertirABigDecimal(datos.get("monto_real"));
+            Integer idUsuario = getUsuarioId(session);
+            BigDecimal montoReal = parseToBigDecimal(datos.get("monto_real"));
 
-            CajaSesion sesion = cajaService.obtenerSesionActiva(idEmpresa)
+            CajaSesion sesionActiva = cajaService.obtenerSesionActiva(idEmpresa, idUsuario)
                     .orElseThrow(() -> new RuntimeException("No hay sesión abierta."));
 
-            BigDecimal ingresos = Optional.ofNullable(
-                    movimientoRepo.sumMontoByIdSesionAndTipo(sesion.getIdSesion(), "INGRESO")
-            ).map(BigDecimal::valueOf).orElse(BigDecimal.ZERO);
+            // DELEGACIÓN: El Service se encarga de calcular el cuadre y cerrar la caja de forma segura
+            cajaService.cerrarCaja(sesionActiva.getIdSesion(), montoReal);
 
-            BigDecimal egresos = Optional.ofNullable(
-                    movimientoRepo.sumMontoByIdSesionAndTipo(sesion.getIdSesion(), "EGRESO")
-            ).map(BigDecimal::valueOf).orElse(BigDecimal.ZERO);
-
-            BigDecimal apertura = Optional.ofNullable(sesion.getMontoApertura())
-                    .orElse(BigDecimal.ZERO);
-
-            BigDecimal esperado = apertura.add(ingresos).subtract(egresos);
-
-            sesion.setFechaCierre(LocalDateTime.now());
-            sesion.setMontoCierreSistema(esperado);
-            sesion.setMontoCierreReal(montoReal);
-            sesion.setEstado("CERRADA");
-
-            sesionRepo.save(sesion);
-
-            return ResponseEntity.ok(Map.of(
-                    "esperado", esperado,
-                    "real", montoReal,
-                    "diferencia", montoReal.subtract(esperado)
-            ));
+            return ResponseEntity.ok(Map.of("status", "success"));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body(Map.of("error", e.getMessage()));
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // =========================
-    // HELPERS
-    // =========================
-
+    // ==========================================
+    // HELPERS (Refactorizados a BigDecimal)
+    // ==========================================
     private Integer getEmpresaId(HttpSession session) {
         Integer id = (Integer) session.getAttribute("idEmpresa");
         if (id == null) throw new RuntimeException("Sesión caducada.");
@@ -249,9 +192,7 @@ public class CajaController {
     }
 
     private Integer getUsuarioId(HttpSession session) {
-        Integer id = (Integer) session.getAttribute("idUsuario");
-        if (id == null) throw new RuntimeException("Usuario no identificado.");
-        return id;
+        return (Integer) session.getAttribute("idUsuario");
     }
 
     private Integer getSucursalId(HttpSession session) {
@@ -259,9 +200,9 @@ public class CajaController {
         return (id != null) ? id : 1;
     }
 
-    private BigDecimal convertirABigDecimal(Object obj) {
+    private BigDecimal parseToBigDecimal(Object obj) {
         try {
-            return (obj == null) ? BigDecimal.ZERO : new BigDecimal(obj.toString());
+            return (obj == null || obj.toString().isBlank()) ? BigDecimal.ZERO : new BigDecimal(obj.toString());
         } catch (Exception e) {
             return BigDecimal.ZERO;
         }

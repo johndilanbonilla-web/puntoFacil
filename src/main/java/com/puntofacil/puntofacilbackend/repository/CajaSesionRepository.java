@@ -9,43 +9,21 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Repository
 public interface CajaSesionRepository extends JpaRepository<CajaSesion, Integer> {
 
-    /**
-     * MÉTODO REQUERIDO POR VIEWCONTROLLER:
-     * Busca la sesión abierta para un usuario específico dentro de su empresa.
-     */
-    Optional<CajaSesion> findByEstadoAndIdUsuarioAndIdEmpresa(String estado, Integer idUsuario, Integer idEmpresa);
-
-    /**
-     * ALIAS PARA COMPATIBILIDAD (Si el Controller solo envía Estado e Usuario):
-     * Nota: Es recomendable usar siempre el que incluye idEmpresa.
-     */
-    Optional<CajaSesion> findByEstadoAndIdUsuario(String estado, Integer idUsuario);
-
-    /**
-     * SESIÓN ACTIVA POR EMPRESA:
-     * El método más importante para el POS y el Cierre de Caja.
-     */
-    Optional<CajaSesion> findByIdEmpresaAndEstado(Integer idEmpresa, String estado);
-
-    /**
-     * VALIDACIÓN DE APERTURA:
-     * Verifica si ya hay una caja abierta en esta empresa.
-     */
+    // --- ESTADO Y CONTROL ---
     boolean existsByIdEmpresaAndEstado(Integer idEmpresa, String estado);
 
-    /**
-     * HISTORIAL BÁSICO:
-     * Solo muestra las sesiones que pertenecen al negocio logueado.
-     */
-    List<CajaSesion> findByIdEmpresaOrderByFechaAperturaDesc(Integer idEmpresa);
+    Optional<CajaSesion> findByIdEmpresaAndEstado(Integer idEmpresa, String estado);
 
-    /**
-     * BÚSQUEDA AVANZADA CON FILTROS:
-     */
+    Optional<CajaSesion> findByIdEmpresaAndIdSucursalAndEstado(Integer idEmpresa, Integer idSucursal, String estado);
+
+    Optional<CajaSesion> findByEstadoAndIdUsuarioAndIdEmpresa(String estado, Integer idUsuario, Integer idEmpresa);
+
+    // --- HISTORIAL ---
     @Query("SELECT s FROM CajaSesion s WHERE s.idEmpresa = :idEmpresa " +
             "AND (:idSucursal IS NULL OR s.idSucursal = :idSucursal) " +
             "AND (s.fechaApertura BETWEEN :inicio AND :fin) " +
@@ -57,8 +35,28 @@ public interface CajaSesionRepository extends JpaRepository<CajaSesion, Integer>
             @Param("fin") LocalDateTime fin
     );
 
+    List<CajaSesion> findByIdEmpresaOrderByFechaAperturaDesc(Integer idEmpresa);
+
+    // --- CÁLCULOS DE AUDITORÍA (Refactorizados) ---
+
     /**
-     * BÚSQUEDA POR SUCURSAL Y EMPRESA:
+     * Suma de ventas usando 'idSesion' y filtrando ventas anuladas.
+     * Retorna BigDecimal para mantener la precisión financiera.
      */
-    Optional<CajaSesion> findByIdEmpresaAndIdSucursalAndEstado(Integer idEmpresa, Integer idSucursal, String estado);
+    @Query("SELECT COALESCE(SUM(v.total), 0) FROM Venta v WHERE v.idSesion = :idSesion AND v.estado != 'ANULADA'")
+    BigDecimal sumTotalVentasBySesion(@Param("idSesion") Integer idSesion);
+
+    /**
+     * Suma de Gastos Operativos.
+     * USAMOS NATIVE QUERY: SQL puro directo a la tabla MySQL
+     */
+    @Query(value = "SELECT COALESCE(SUM(monto), 0) FROM gasto WHERE id_sesion = :idSesion AND estado != 'ANULADO'", nativeQuery = true)
+    BigDecimal sumTotalGastosBySesion(@Param("idSesion") Integer idSesion);
+
+    /**
+     * Suma de Compras de Mercadería (Inventario).
+     * USAMOS NATIVE QUERY: Asegúrate de que la columna en MySQL se llame 'total_compra' o ajusta el nombre
+     */
+    @Query(value = "SELECT COALESCE(SUM(total_compra), 0) FROM compra WHERE id_sesion = :idSesion AND estado != 'ANULADO'", nativeQuery = true)
+    BigDecimal sumTotalComprasBySesion(@Param("idSesion") Integer idSesion);
 }

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -13,36 +14,43 @@ import java.util.Map;
 public interface CajaMovimientoRepository extends JpaRepository<CajaMovimiento, Integer> {
 
     /**
-     * DETALLE DE SESIÓN:
-     * Lista todos los movimientos (Entradas/Salidas/Ventas) de una sesión.
+     * Recupera todos los movimientos de una sesión específica.
+     * Usado para el listado general en la vista de auditoría.
+     */
+    List<CajaMovimiento> findByIdSesion(Integer idSesion);
+
+    /**
+     * Versión ordenada para mostrar el historial del más reciente al más antiguo.
      */
     List<CajaMovimiento> findByIdSesionOrderByFechaMovimientoDesc(Integer idSesion);
 
     /**
-     * SUMATORIA PARA ARQUEO:
-     * Calcula el total de INGRESOS o EGRESOS para comparar contra el monto real.
-     * Usamos Double para evitar problemas de compatibilidad con funciones agregadas de SQL.
+     * Calcula totales de INGRESOS o EGRESOS.
+     * Importante: Se cambió 'tipoMovimiento' a 'tipo' para coincidir con la Entity.
      */
-    @Query("SELECT COALESCE(SUM(m.monto), 0.0) FROM CajaMovimiento m " +
+    @Query("SELECT COALESCE(SUM(m.monto), 0) FROM CajaMovimiento m " +
             "WHERE m.idSesion = :idSesion AND m.tipoMovimiento = :tipo")
-    Double sumMontoByIdSesionAndTipo(@Param("idSesion") Integer idSesion, @Param("tipo") String tipo);
+    BigDecimal sumMontoByIdSesionAndTipo(@Param("idSesion") Integer idSesion, @Param("tipo") String tipo);
+
 
     /**
-     * RESUMEN DE PAGOS:
-     * Cruza los ingresos por su descripción (Ej: 'VENTA EFECTIVO', 'VENTA TARJETA').
-     * Esto es lo que alimenta el gráfico o tabla de métodos de pago en el detalle de caja.
+     * Resumen de Ingresos por Método de Pago (Con la nueva estructura)
+     * Une con la tabla forma_pago para obtener el nombre exacto.
      */
-    @Query("SELECT m.descripcion AS nombre, SUM(m.monto) AS total " +
+    @Query("SELECT fp.nombre AS nombre, SUM(m.monto) AS total " +
             "FROM CajaMovimiento m " +
+            "JOIN FormaPago fp ON m.idFormaPago = fp.idFormaPago " +
             "WHERE m.idSesion = :idSesion AND m.tipoMovimiento = 'INGRESO' " +
-            "GROUP BY m.descripcion")
+            "GROUP BY fp.nombre")
     List<Map<String, Object>> obtenerResumenVentasPorMetodo(@Param("idSesion") Integer idSesion);
 
+
     /**
-     * SEGURIDAD EXTRA (Opcional):
-     * Busca movimientos asegurando que la sesión pertenezca a la empresa.
+     * Obtiene el total EXACTO en efectivo.
+     * Asumiendo que el ID de Efectivo en tu tabla forma_pago es 1 (o filtra por fp.tipoCategoria = 'EFECTIVO')
      */
-    @Query("SELECT m FROM CajaMovimiento m JOIN CajaSesion s ON m.idSesion = s.idSesion " +
-            "WHERE s.idSesion = :idSesion AND s.idEmpresa = :idEmpresa")
-    List<CajaMovimiento> findBySesionAndEmpresa(@Param("idSesion") Integer idSesion, @Param("idEmpresa") Integer idEmpresa);
+    @Query("SELECT COALESCE(SUM(m.monto), 0) FROM CajaMovimiento m " +
+            "JOIN FormaPago fp ON m.idFormaPago = fp.idFormaPago " +
+            "WHERE m.idSesion = :idSesion AND m.tipoMovimiento = 'INGRESO' AND fp.tipoCategoria = 'EFECTIVO'")
+    BigDecimal sumVentasEfectivoBySesion(@Param("idSesion") Integer idSesion);
 }

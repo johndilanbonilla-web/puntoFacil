@@ -5,130 +5,288 @@
       layout:decorate="~{layouts/main}">
 <head>
     <title>Gestión de Inventarios - Punto Fácil</title>
+
+    <style>
+        :root {
+            --pf-primary: #10b981; /* Verde Success para Inventario */
+            --pf-dark-bg: #0f172a;
+            --pf-card-bg: #1e293b;
+            --pf-border: #334155;
+            --pf-text-main: #f8fafc;
+        }
+
+        .form-control-dark, .form-select-dark {
+            background: var(--pf-dark-bg) !important;
+            border: 1px solid var(--pf-border) !important;
+            color: white !important;
+        }
+
+        .form-control-dark:focus, .form-select-dark:focus {
+            border-color: var(--pf-primary) !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+        }
+
+        .border-info-custom { border-color: #0ea5e9 !important; }
+
+        /* =========================================================
+           SELECT2 DARK MODE CUSTOM
+           ========================================================= */
+        .select2-container--bootstrap-5 .select2-selection {
+            background-color: var(--pf-dark-bg) !important;
+            border: 1px solid var(--pf-border) !important;
+            color: white !important;
+            min-height: 38px;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: white !important;
+            line-height: 36px;
+        }
+        .select2-dropdown {
+            background-color: var(--pf-card-bg) !important;
+            border: 1px solid var(--pf-border) !important;
+        }
+        .select2-results__option {
+            color: var(--pf-text-main) !important;
+        }
+        .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--pf-primary) !important;
+            color: white !important;
+        }
+        .select2-search__field {
+            background-color: var(--pf-dark-bg) !important;
+            border: 1px solid var(--pf-border) !important;
+            color: white !important;
+        }
+
+        /* =========================================================
+           TABLAS DARK CUSTOM (Igual que Ventas y Gastos)
+           ========================================================= */
+        .table-dark-custom {
+            background: var(--pf-card-bg) !important;
+            border: 1px solid var(--pf-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-dark-custom table {
+            background-color: transparent !important;
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .table-dark-custom thead th {
+            background-color: rgba(15, 23, 42, 0.9) !important;
+            color: var(--pf-primary) !important;
+            border-bottom: 2px solid var(--pf-border) !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 15px 20px;
+        }
+
+        .table-dark-custom td {
+            background-color: var(--pf-card-bg) !important;
+            color: var(--pf-text-main) !important;
+            border-bottom: 1px solid var(--pf-border) !important;
+            vertical-align: middle;
+            padding: 12px 20px;
+        }
+
+        .table-hover tbody tr:hover td {
+            background-color: #2d3a4f !important;
+        }
+
+        /* =========================================================
+           MAGIA RESPONSIVA: TABLE TO CARDS (INVENTARIO)
+           ========================================================= */
+        @media (max-width: 768px) {
+            .table-dark-custom { border: none !important; background: transparent !important; }
+            .table-dark-custom table, .table-dark-custom tbody { display: block; width: 100%; }
+            .table-dark-custom thead { display: none; }
+
+            .table-dark-custom tr {
+                display: block;
+                background: var(--pf-card-bg) !important;
+                border: 1px solid var(--pf-border);
+                border-radius: 12px;
+                margin-bottom: 1.2rem;
+                padding: 0;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            }
+
+            .table-dark-custom td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 15px !important;
+                text-align: right;
+                border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+            }
+
+            .table-dark-custom td:last-child { border-bottom: none !important; justify-content: flex-end; }
+
+            .table-dark-custom td::before {
+                content: attr(data-label);
+                font-size: 0.7rem;
+                font-weight: bold;
+                color: #94a3b8;
+                text-transform: uppercase;
+                margin-right: 15px;
+                text-align: left;
+            }
+
+            .table-dark-custom td:first-child {
+                justify-content: flex-start;
+                background: rgba(15, 23, 42, 0.4) !important;
+                border-radius: 12px 12px 0 0;
+                border-bottom: 1px solid var(--pf-border) !important;
+            }
+
+            .table-dark-custom td:first-child::before { display: none; }
+        }
+    </style>
 </head>
 <body>
 
-<div layout:fragment="content">
-    <section class="container-fluid py-4">
+<div layout:fragment="content" class="container-fluid py-3 px-2 px-md-4">
 
-        <div class="d-flex align-items-center mb-4">
-            <div class="bg-success p-3 rounded-3 me-3 shadow-lg">
-                <i class="bi bi-box-seam-fill fa-2x text-white"></i>
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center mb-4">
+        <div class="bg-success p-3 rounded-3 me-3 shadow-lg d-none d-md-block">
+            <i class="bi bi-box-seam-fill fa-2x text-white"></i>
+        </div>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-box-seam-fill text-success fs-3 d-md-none"></i>
+                <h3 class="mb-0 text-white fw-bold">Gestión de Inventarios</h3>
             </div>
-            <div>
-                <h2 class="mb-0 text-white fw-bold">Gestión de Inventarios</h2>
-                <p class="text-secondary mb-0">Control de existencias y valoración de costos</p>
+            <p class="text-muted small mb-0">Control de existencias y valoración de costos</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-7">
+            <div class="card shadow-sm h-100" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border); border-radius: 16px;">
+                <div class="card-header border-bottom border-secondary bg-transparent py-3">
+                    <h6 class="card-title mb-0 text-success fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                        <i class="bi bi-pencil-square me-2"></i>Ajuste Manual de Existencias
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/inventario/ajuste/guardar}" method="POST">
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold small">Seleccionar Producto</label>
+                            <select name="idProducto" class="form-select select2" required>
+                                <option value="">Buscar por nombre o código...</option>
+                                <option th:each="p : ${productos}"
+                                        th:value="${p.idProducto}"
+                                        th:text="${p.codigoBarra + ' - ' + p.nombre}"></option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 col-md-4 mb-3 mb-md-4">
+                                <label class="form-label text-light fw-bold small">Tipo de Ajuste</label>
+                                <select name="tipoAjuste" id="tipoAjuste" class="form-select form-select-dark py-2" required onchange="actualizarInterfazCosto()">
+                                    <option value="INGRESO" class="text-success">➕ INGRESO</option>
+                                    <option value="SALIDA" class="text-danger">➖ SALIDA</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 mb-3 mb-md-4">
+                                <label class="form-label text-light fw-bold small">Cantidad</label>
+                                <input type="number" name="cantidad" step="0.01" class="form-control form-control-dark py-2" placeholder="0.00" required>
+                            </div>
+                            <div class="col-12 col-md-4 mb-3 mb-md-4" id="contenedorCosto">
+                                <label class="form-label text-info fw-bold small">Costo Unitario ($)</label>
+                                <input type="number" name="costoUnitario" id="costoUnitario" step="0.01" class="form-control form-control-dark border-info-custom py-2" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold small">Motivo o Justificación</label>
+                            <textarea name="motivo" class="form-control form-control-dark py-2" rows="2" placeholder="Ej: Factura #123, Ajuste de inventario..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow">
+                            <i class="bi bi-check-lg me-2"></i>Procesar Movimiento
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div class="row g-4">
-            <div class="col-lg-7">
-                <div class="card bg-dark border-secondary shadow-sm h-100 rounded-4">
-                    <div class="card-header border-secondary bg-transparent py-3">
-                        <h5 class="card-title mb-0 text-success fw-bold">
-                            <i class="bi bi-pencil-square me-2"></i>Ajuste Manual de Existencias
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <form th:action="@{/inventario/ajuste/guardar}" method="POST">
-                            <div class="mb-4">
-                                <label class="form-label text-light fw-semibold">Seleccionar Producto</label>
-                                <select name="idProducto" class="form-select bg-dark text-white border-secondary select2" required>
-                                    <option value="">Buscar por nombre o código...</option>
-                                    <option th:each="p : ${productos}"
-                                            th:value="${p.idProducto}"
-                                            th:text="${p.codigoBarra + ' - ' + p.nombre}"></option>
-                                </select>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-4 mb-4">
-                                    <label class="form-label text-light fw-semibold">Tipo de Ajuste</label>
-                                    <select name="tipoAjuste" id="tipoAjuste" class="form-select bg-dark text-white border-secondary" required onchange="actualizarInterfazCosto()">
-                                        <option value="INGRESO" class="text-success">➕ INGRESO (Compra)</option>
-                                        <option value="SALIDA" class="text-danger">➖ SALIDA (Merma/Gasto)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-4">
-                                    <label class="form-label text-light fw-semibold">Cantidad</label>
-                                    <input type="number" name="cantidad" step="0.01" class="form-control bg-dark text-white border-secondary" placeholder="0.00" required>
-                                </div>
-                                <div class="col-md-4 mb-4" id="contenedorCosto">
-                                    <label class="form-label text-info fw-semibold">Costo Unitario ($)</label>
-                                    <input type="number" name="costoUnitario" id="costoUnitario" step="0.01" class="form-control bg-dark text-white border-info" placeholder="0.00">
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label text-light fw-semibold">Motivo o Justificación</label>
-                                <textarea name="motivo" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Ej: Factura #123 o Producto quebrado..."></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow">
-                                <i class="bi bi-check-lg me-2"></i>Procesar Movimiento
-                            </button>
-                        </form>
-                    </div>
+        <div class="col-12 col-lg-5">
+            <div class="card shadow-sm h-100" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border); border-radius: 16px;">
+                <div class="card-header border-bottom border-secondary bg-transparent py-3">
+                    <h6 class="card-title mb-0 text-warning fw-bold text-uppercase" style="letter-spacing: 0.5px;">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>Carga Masiva (CSV)
+                    </h6>
                 </div>
-            </div>
+                <div class="card-body d-flex flex-column">
+                    <p class="text-muted small mb-4 lh-sm">Al cargar por CSV, asegúrese de incluir la columna de <strong>Costo Compra</strong> para mantener sus márgenes y valoraciones de inventario actualizados.</p>
 
-            <div class="col-lg-5">
-                <div class="card bg-dark border-secondary shadow-sm h-100 rounded-4">
-                    <div class="card-header border-secondary bg-transparent py-3">
-                        <h5 class="card-title mb-0 text-warning fw-bold">
-                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>Carga Masiva (CSV)
-                        </h5>
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <p class="text-secondary small mb-4">Al cargar por CSV, asegúrese de incluir la columna de <strong>Costo Compra</strong> para mantener sus márgenes actualizados.</p>
-
-                        <form th:action="@{/inventario/carga-masiva/procesar}" method="POST" enctype="multipart/form-data">
-                            <div class="mb-4">
-                                <label class="form-label text-light fw-semibold">Seleccionar Archivo</label>
-                                <input type="file" name="archivo" class="form-control bg-dark text-white border-secondary" accept=".csv" required>
-                            </div>
-                            <button type="submit" class="btn btn-warning w-100 py-2 fw-bold text-dark">
-                                <i class="bi bi-upload me-2"></i>Subir y Procesar Inventario
-                            </button>
-                        </form>
-
-                        <div class="mt-auto pt-4 border-top border-secondary text-center">
-                            <a href="#" class="text-warning text-decoration-none small">
-                                <i class="bi bi-download me-1"></i>Descargar plantilla con columna de costos
-                            </a>
+                    <form th:action="@{/inventario/carga-masiva/procesar}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label class="form-label text-light fw-bold small">Seleccionar Archivo</label>
+                            <input type="file" name="archivo" class="form-control form-control-dark py-2" accept=".csv" required>
                         </div>
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-bold text-dark shadow-sm">
+                            <i class="bi bi-upload me-2"></i>Subir y Procesar Inventario
+                        </button>
+                    </form>
+
+                    <div class="mt-auto pt-4 border-top border-secondary border-opacity-50 text-center">
+                        <a href="#" class="text-warning text-decoration-none small fw-bold">
+                            <i class="bi bi-download me-1"></i>Descargar plantilla CSV
+                        </a>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-12">
-                <div class="card bg-dark border-secondary shadow-sm rounded-4 overflow-hidden">
-                    <div class="card-header border-secondary bg-transparent py-3">
-                        <h5 class="card-title mb-0 text-white fw-bold">Últimos Movimientos Registrados</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0 align-middle">
-                            <thead class="table-light text-dark">
+        <div class="col-12">
+            <div class="card shadow-sm overflow-hidden" style="background: var(--pf-card-bg); border: 1px solid var(--pf-border); border-radius: 16px;">
+                <div class="card-header border-bottom border-secondary bg-transparent py-3">
+                    <h6 class="card-title mb-0 text-white fw-bold text-uppercase" style="letter-spacing: 0.5px;">Últimos Movimientos Registrados</h6>
+                </div>
+
+                <div class="table-dark-custom">
+                    <div>
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
                             <tr>
                                 <th class="ps-4">Fecha</th>
                                 <th>Producto</th>
                                 <th class="text-center">Tipo</th>
                                 <th class="text-center">Cant.</th>
                                 <th class="text-end">Costo Unit.</th>
-                                <th class="text-center">Saldo</th>
+                                <th class="text-center pe-4">Saldo</th>
                             </tr>
                             </thead>
                             <tbody>
                             <tr th:each="m : ${recientes}">
-                                <td class="ps-4 text-secondary small" th:text="${#temporals.format(m.fecha, 'dd/MM/yyyy HH:mm')}"></td>
-                                <td class="fw-bold text-info" th:text="${m.inventario.producto.nombre}"></td>
-                                <td class="text-center">
-                                    <span th:class="${m.saldoResultante > m.saldoAnterior ? 'badge bg-success' : 'badge bg-danger'}"
-                                          th:text="${m.saldoResultante > m.saldoAnterior ? 'INGRESO' : 'SALIDA'}"></span>
+                                <td class="ps-4 text-muted small fw-bold" data-label="Fecha" th:text="${#temporals.format(m.fecha, 'dd/MM/yyyy HH:mm')}"></td>
+
+                                <td class="fw-bold text-info text-end text-md-start" data-label="Producto" th:text="${m.inventario.producto.nombre}"></td>
+
+                                <td class="text-end text-md-center" data-label="Tipo">
+                                    <span th:class="${m.saldoResultante > m.saldoAnterior ? 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25'}"
+                                          th:text="${m.saldoResultante > m.saldoAnterior ? 'INGRESO' : 'SALIDA'}"
+                                          style="font-size: 0.65rem; padding: 4px 8px; letter-spacing: 0.5px;"></span>
                                 </td>
-                                <td class="text-center fw-bold text-warning" th:text="${m.cantidad}"></td>
-                                <td class="text-end fw-bold text-white" th:text="${m.costoUnitario != null ? '$' + #numbers.formatDecimal(m.costoUnitario, 1, 2) : '-'}"></td>
-                                <td class="text-center fw-bold" th:text="${m.saldoResultante}"></td>
+
+                                <td class="text-end text-md-center fw-bold text-warning fs-6" data-label="Cant." th:text="${m.cantidad}"></td>
+
+                                <td class="text-end text-md-end fw-bold text-white" data-label="Costo Unit." th:text="${m.costoUnitario != null ? '$' + #numbers.formatDecimal(m.costoUnitario, 1, 2) : '-'}"></td>
+
+                                <td class="text-end text-md-center fw-bold fs-6 pe-4" data-label="Saldo Final">
+                                    <span class="text-primary" th:text="${m.saldoResultante}"></span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recientes)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-box-seam d-block fs-2 opacity-25 mb-2"></i>
+                                    No hay movimientos registrados recientemente.
+                                </td>
                             </tr>
                             </tbody>
                         </table>
@@ -136,54 +294,34 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </div>
 
 <th:block layout:fragment="scripts">
-    <style>
-        .form-label { color: #e5e7eb !important; }
-        .form-control, .form-select {
-            background-color: #111827 !important;
-            border-color: #4b5563 !important;
-            color: #ffffff !important;
-        }
-        .border-info { border-color: #0dcaf0 !important; } /* Resaltar campo de costo */
-
-        .table-dark { --bs-table-bg: #1f2937; }
-        .table thead th { color: #9ca3af !important; text-transform: uppercase; font-size: 0.75rem; }
-
-        /* Select2 Dark */
-        .select2-container--bootstrap-5 .select2-selection {
-            background-color: #111827 !important;
-            border-color: #4b5563 !important;
-            color: #ffffff !important;
-        }
-        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered { color: #ffffff !important; }
-    </style>
-
     <script>
         $(document).ready(function() {
+            // Inicializar Select2 con el theme y adaptación al nuevo CSS Dark
             $('.select2').select2({
                 theme: 'bootstrap-5',
-                width: '100%'
+                width: '100%',
+                dropdownCssClass: "select2-dark-dropdown"
             });
             actualizarInterfazCosto();
         });
 
-        // Función para manejar la importancia del costo según el tipo de movimiento
         function actualizarInterfazCosto() {
             const tipo = $('#tipoAjuste').val();
             const inputCosto = $('#costoUnitario');
 
             if (tipo === 'INGRESO') {
                 inputCosto.attr('required', true);
-                inputCosto.addClass('border-info');
-                $('#contenedorCosto').fadeIn();
+                inputCosto.addClass('border-info-custom');
+                $('#contenedorCosto').fadeIn(200);
             } else {
-                // En salidas el costo suele ser el promedio actual,
-                // opcionalmente podrías ocultarlo o dejarlo informativo.
                 inputCosto.attr('required', false);
-                inputCosto.removeClass('border-info');
+                inputCosto.removeClass('border-info-custom');
+                // Al ser una salida, usualmente no forzamos que se introduzca un costo de compra nuevo.
+                // Podrías ocultarlo si tu lógica contable usa Promedio Ponderado automático.
             }
         }
     </script>

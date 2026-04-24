@@ -30,7 +30,6 @@ public class Sucursal {
     @Column(name = "validar_stock")
     private Integer validarStock = 0;
 
-    // Campos de ubicación
     @Column(name = "id_departamento", length = 2)
     private String idDepartamento;
 
@@ -40,6 +39,7 @@ public class Sucursal {
     @Column(name = "id_distrito", length = 6)
     private String idDistrito;
 
-    @Column(name = "codigo_sucursal_r", length = 10)
-    private String codigoSucursal;
+
+    @Column(name = "codigo_sucursal_re", length = 10)
+    private String codigoSucursalRe;
 }

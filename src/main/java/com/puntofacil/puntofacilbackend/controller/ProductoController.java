@@ -84,6 +84,29 @@ public class ProductoController {
         }
     }
 
+    // ==========================================
+    // NUEVO PRODUCTO (El método que faltaba)
+    // ==========================================
+    @GetMapping("/nuevo")
+    public String nuevoProducto(Model model, HttpSession session) {
+        try {
+            Integer idEmpresa = getEmpresaId(session);
+
+            // 1. Instanciamos un Producto vacío para que Thymeleaf no explote al buscar th:field
+            Producto nuevoProducto = new Producto();
+
+            // 2. Inyectamos al modelo el producto y las listas necesarias para el formulario
+            model.addAttribute("producto", nuevoProducto);
+            model.addAttribute("familias", familiaService.findAllByEmpresa(idEmpresa));
+
+            // 3. Retornamos exactamente la misma vista que usa el método editar
+            return "admin/productos_form";
+
+        } catch (RuntimeException e) {
+            return "redirect:/login?error=session_expired";
+        }
+    }
+
     // --- GUARDAR ---
     @PostMapping("/guardar")
     @ResponseBody

@@ -20,24 +20,23 @@ public class CajaInterceptor implements HandlerInterceptor {
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
 
-        // 1. Solo actuar si hay un modelo para la vista (páginas HTML)
+        // 1. Solo actuar si hay un modelo y no es una redirección
         if (modelAndView != null && !modelAndView.getViewName().startsWith("redirect:")) {
 
             HttpSession session = request.getSession();
-            Integer idEmpresa = (Integer) session.getAttribute("id_empresa");
 
-            // Si el atributo id_empresa tiene otro nombre en tu sesión, búscalo también así:
-            if (idEmpresa == null) idEmpresa = (Integer) session.getAttribute("idEmpresa");
+            // Unificamos la búsqueda de atributos (usando el estándar camelCase que vimos en tu Controller)
+            Integer idEmpresa = (Integer) session.getAttribute("idEmpresa");
+            Integer idUsuario = (Integer) session.getAttribute("idUsuario");
 
-            // 2. Si hay una empresa en sesión, verificamos SU caja
-            if (idEmpresa != null) {
-                // Usamos el nuevo método del Service que creamos antes
-                boolean estaAbierta = cajaService.tieneSesionActiva(idEmpresa);
+            // 2. Seguridad Multiusuario: Verificamos si ESTE usuario tiene caja abierta en ESTA empresa
+            if (idEmpresa != null && idUsuario != null) {
+                // Usamos el método que ya refactorizamos en el Service
+                boolean estaAbierta = cajaService.obtenerSesionActiva(idEmpresa, idUsuario).isPresent();
 
-                // Inyecta la variable que usas en Thymeleaf (ej: th:if="${cajaActiva}")
+                // Inyectamos la variable global para Thymeleaf
                 modelAndView.addObject("cajaActiva", estaAbierta);
             } else {
-                // Si no hay sesión, por seguridad enviamos false
                 modelAndView.addObject("cajaActiva", false);
             }
         }

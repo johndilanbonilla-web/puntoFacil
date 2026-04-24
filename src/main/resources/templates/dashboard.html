@@ -128,7 +128,19 @@
     <div class="chart-container shadow-lg">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h6 class="section-title mb-0">Rendimiento Semanal</h6>
-            <span class="badge bg-primary bg-opacity-20 text-info-custom border border-info-custom border-opacity-25">En Vivo</span>
+
+            <!-- 🔥 CAMBIO AQUÍ -->
+            <span class="badge" style="
+                background: linear-gradient(135deg, #22c55e, #16a34a);
+                color: #ffffff;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                padding: 6px 12px;
+                border-radius: 999px;
+            ">
+                ● EN VIVO
+            </span>
+
         </div>
         <canvas id="ventasChart"></canvas>
     </div>
@@ -143,7 +155,7 @@
             <i class="bi bi-cart-plus shortcut-icon"></i>
         </a>
 
-        <a th:href="@{/compras/nuevo}" class="card-shortcut bg-compras">
+        <a href="javascript:void(0)" onclick="mostrarModuloNoDisponible()" class="card-shortcut bg-compras">
             <div class="shortcut-text">
                 <h4>Nueva Compra</h4>
                 <p class="mb-0 opacity-75">Ingreso de Mercancía</p>
@@ -176,6 +188,7 @@
         </a>
     </div>
 
+    <!-- SCRIPT ORIGINAL SIN CAMBIOS -->
     <script th:inline="javascript">
         const ventasData = /*[[${ventasSemana}]]*/ [0, 0, 0, 0, 0, 0, 0];
 
@@ -244,5 +257,56 @@
         });
     </script>
 </div>
+
+<!-- 🔥 CAMBIO AQUÍ (MENSAJE) -->
+<div id="toastModulo" style="
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #f3f4f6;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 9999;
+    min-width: 280px;
+    animation: fadeIn 0.3s ease;
+">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <i class="bi bi-tools" style="color:#a855f7; font-size:1.2rem;"></i>
+        <div>
+            <strong>Módulo no disponible</strong>
+            <div style="font-size:0.8rem; color:#9ca3af;">
+                La opción de registrar compras aún no está habilitada en el sistema.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    function mostrarModuloNoDisponible() {
+        const toast = document.getElementById("toastModulo");
+
+        toast.style.display = "block";
+        toast.style.opacity = "1";
+
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => {
+                toast.style.display = "none";
+            }, 300);
+        }, 3000);
+    }
+</script>
+
 </body>
 </html>

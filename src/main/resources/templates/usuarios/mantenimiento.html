@@ -4,7 +4,7 @@
 
     <head>
         <style>
-            /* Variables de color consistentes con el sistema */
+            /* Variables de color consistentes */
             :root {
                 --pf-primary: #3b82f6;
                 --pf-success: #10b981;
@@ -14,7 +14,6 @@
                 --pf-text-main: #f8fafc;
             }
 
-            /* Contenedor de tabla oscuro con bordes redondeados */
             .table-dark-custom {
                 background: var(--pf-card-bg) !important;
                 border: 1px solid var(--pf-border);
@@ -22,14 +21,6 @@
                 overflow: hidden;
             }
 
-            .table-dark-custom table {
-                background-color: transparent !important;
-                margin-bottom: 0;
-                border-collapse: separate;
-                border-spacing: 0;
-            }
-
-            /* Encabezados con el azul de Punto Fácil */
             .table-dark-custom thead th {
                 background-color: rgba(15, 23, 42, 0.9) !important;
                 color: var(--pf-primary) !important;
@@ -40,21 +31,14 @@
                 padding: 15px 20px;
             }
 
-            /* Celdas con texto claro */
             .table-dark-custom td {
                 background-color: var(--pf-card-bg) !important;
                 color: var(--pf-text-main) !important;
                 border-bottom: 1px solid var(--pf-border) !important;
                 vertical-align: middle;
                 padding: 12px 20px;
-                transition: background 0.2s;
             }
 
-            .table-hover tbody tr:hover td {
-                background-color: #2d3a4f !important;
-            }
-
-            /* Estilo para los botones en modo oscuro */
             .btn-dark-mode {
                 background: #0f172a;
                 border: 1px solid var(--pf-border);
@@ -65,6 +49,66 @@
                 background: #1e293b;
                 color: var(--pf-primary);
             }
+
+            /* =========================================================
+               MAGIA RESPONSIVA: TABLE TO CARDS PARA MÓVILES
+               ========================================================= */
+            @media (max-width: 768px) {
+                /* Quitamos bordes y fondos de la tabla contenedora */
+                .table-dark-custom { border: none !important; background: transparent !important; }
+                .table-dark-custom table, .table-dark-custom tbody { display: block; width: 100%; }
+
+                /* Ocultamos los encabezados (thead) */
+                .table-dark-custom thead { display: none; }
+
+                /* Convertimos cada fila (tr) en una Tarjeta */
+                .table-dark-custom tr {
+                    display: block;
+                    background: var(--pf-card-bg) !important;
+                    border: 1px solid var(--pf-border);
+                    border-radius: 12px;
+                    margin-bottom: 1.2rem;
+                    padding: 0;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                }
+
+                /* Convertimos cada celda (td) en un renglón flex */
+                .table-dark-custom td {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 12px 15px !important;
+                    text-align: right;
+                    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+                }
+
+                /* Quitamos la línea del último elemento (Acciones) */
+                .table-dark-custom td:last-child { border-bottom: none !important; }
+
+                /* Inyectamos el título de la columna usando el atributo data-label */
+                .table-dark-custom td::before {
+                    content: attr(data-label);
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                    color: #94a3b8;
+                    text-transform: uppercase;
+                    margin-right: 15px;
+                }
+
+                /* Destacamos la primera columna como el "Título" de la tarjeta */
+                .table-dark-custom td:first-child {
+                    justify-content: flex-start;
+                    background: rgba(15, 23, 42, 0.4) !important;
+                    border-radius: 12px 12px 0 0;
+                    border-bottom: 1px solid var(--pf-border) !important;
+                }
+
+                /* Ocultamos la etiqueta en el título de la tarjeta */
+                .table-dark-custom td:first-child::before { display: none; }
+
+                /* Alinear acciones a la derecha */
+                .table-dark-custom td:last-child { justify-content: flex-end; }
+            }
         </style>
     </head>
 
@@ -72,7 +116,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h4 class="fw-bold mb-0 text-white">Gestión de Usuarios</h4>
-                <p class="text-muted small mb-0">Control de acceso y perfiles de empleados.</p>
+                <p class="text-muted small mb-0">Control de acceso y perfiles de empleados por sucursal.</p>
             </div>
             <div class="d-flex gap-2">
                 <a th:href="@{/dashboard}" class="btn btn-sm btn-dark-mode px-3">
@@ -89,12 +133,12 @@
         </div>
 
         <div class="table-dark-custom shadow-lg">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
+            <div>
+                <table class="table table-hover align-middle mb-0">
                     <thead>
                     <tr>
                         <th class="ps-4">Usuario</th>
-                        <th class="d-none d-md-table-cell">Username</th>
+                        <th>Sucursal</th>
                         <th>Rol</th>
                         <th class="text-center">Estado</th>
                         <th class="text-center pe-4">Acciones</th>
@@ -102,31 +146,35 @@
                     </thead>
                     <tbody>
                     <tr th:each="u : ${usuarios}">
-                        <td class="ps-4">
+                        <td class="ps-4" data-label="Usuario">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"
                                      style="width: 38px; height: 38px; font-size: 0.85rem;"
                                      th:text="${#strings.substring(u.nombreCompleto,0,1)}">U</div>
-                                <div>
-                                    <div class="text-white fw-semibold" th:text="${u.nombreCompleto}">Nombre</div>
-                                    <div class="d-md-none text-muted small" th:text="${u.username}">user</div>
+                                <div class="text-start">
+                                    <div class="text-white fw-semibold lh-sm" th:text="${u.nombreCompleto}">Nombre</div>
+                                    <div class="text-info opacity-75 small font-monospace" th:text="${u.username}">user</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="d-none d-md-table-cell font-monospace small text-info opacity-75" th:text="${u.username}">username</td>
-                        <td>
-                            <span class="badge rounded-pill bg-dark border border-secondary border-opacity-50 text-info px-2 py-1"
-                                  style="font-size: 0.7rem;" th:text="${u.rol}">ROL</span>
-                        </td>
-                        <td class="text-center">
-                            <div class="d-flex align-items-center justify-content-center gap-2">
-                                <i class="bi bi-circle-fill" th:classappend="${u.activo ? 'text-success' : 'text-danger'}"
-                                   style="font-size: 0.5rem;"></i>
-                                <span class="d-none d-md-inline small opacity-75"
-                                      th:text="${u.activo ? 'Activo' : 'Inactivo'}"></span>
+                        <td data-label="Sucursal">
+                            <div class="d-flex align-items-center gap-2 justify-content-end justify-content-md-start">
+                                <i class="bi bi-geo-alt text-muted" style="font-size: 0.8rem;"></i>
+                                <span class="text-white-50 small" th:text="${u.sucursal != null ? u.sucursal.nombre : 'Sin sede'}">Sucursal</span>
                             </div>
                         </td>
-                        <td class="text-center pe-4">
+                        <td data-label="Rol">
+                            <span class="badge rounded-pill bg-dark border border-secondary border-opacity-50 text-info px-2 py-1"
+                                  style="font-size: 0.7rem;"
+                                  th:text="${u.rol}">ROL</span>
+                        </td>
+                        <td class="text-center text-md-center" data-label="Estado">
+                            <span th:class="${u.activo ? 'text-success' : 'text-danger'}" style="font-size: 0.75rem;">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                <span th:text="${u.activo ? 'Activo' : 'Inactivo'}"></span>
+                            </span>
+                        </td>
+                        <td class="text-center pe-4" data-label="Acciones">
                             <a th:href="@{/usuarios/editar/{id}(id=${u.idUsuario})}"
                                class="btn btn-sm btn-dark-mode" title="Editar Usuario">
                                 <i class="bi bi-pencil-square text-info"></i>

@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org" layout:decorate="~{layouts/main}">
 <head>
+    <title>Auditoría de Cierre - Punto Fácil</title>
     <style>
         :root {
             --bg-main: #0f172a;
             --bg-card: #1e293b;
-            --accent-green: #22c55e;
-            --accent-blue: #38bdf8;
-            --accent-orange: #f59e0b;
-            --accent-red: #ef4444;
-            --text-main: #f8fafc; /* Blanco para lectura */
-            --text-muted: #cbd5e1; /* Gris claro para lectura secundaria */
+            --pf-primary: #3b82f6;
+            --pf-success: #10b981;
+            --pf-danger: #ef4444;
+            --pf-warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
             --border-color: rgba(255, 255, 255, 0.1);
         }
 
         body { background-color: var(--bg-main) !important; color: var(--text-main); font-family: 'Inter', sans-serif; }
 
-        /* --- UI SCREEN (MODO OSCURO) --- */
         .pf-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -27,50 +27,42 @@
 
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
         .summary-item { padding: 0.5rem 1rem; border-left: 3px solid var(--border-color); }
-        .summary-label { color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; display: block; }
+
+        /* MEJORA VISUAL: Texto un poco más grande y espaciado para mejor lectura */
+        .summary-label { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px; }
         .summary-value { font-size: 1.4rem; font-weight: 800; display: block; }
 
-        /* Cuadre de Caja */
-        .status-badge {
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-weight: 800;
-            font-size: 0.8rem;
+        /* Status Badges */
+        .status-badge { padding: 8px 16px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; }
+        .status-ok { background: rgba(16, 185, 129, 0.1); color: var(--pf-success); border: 1px solid var(--pf-success); }
+        .status-error { background: rgba(239, 68, 68, 0.1); color: var(--pf-danger); border: 1px solid var(--pf-danger); }
+
+        /* Métodos de Pago y Salidas */
+        .metodo-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; }
+        .metodo-header { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.8rem; margin-bottom: 8px; text-transform: uppercase; }
+        .metodo-monto { font-size: 1.4rem; font-weight: 800; color: #fff; }
+
+        /* Tablas */
+        .table-custom { background-color: transparent !important; }
+        .table-custom thead th {
+            background: rgba(15, 23, 42, 0.5);
+            color: var(--pf-primary);
+            font-size: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .status-ok { background: rgba(34, 197, 94, 0.1); color: var(--accent-green); border: 1px solid var(--accent-green); }
-        .status-error { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .table-custom td { border-bottom: 1px solid var(--border-color); padding: 12px; font-size: 0.85rem; vertical-align: middle; }
 
-        /* Métodos de Pago */
-        .metodo-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            transition: transform 0.2s;
-        }
-        .metodo-header { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.8rem; margin-bottom: 10px; }
-        .metodo-monto { font-size: 1.6rem; font-weight: 800; color: #fff; }
-
-        /* --- FORMATO DE IMPRESIÓN (CONTABLE) --- */
         @media print {
-            @page { margin: 1cm; }
-            .no-print, .btn, .no-print-accordion-icon { display: none !important; }
-            body { background: white !important; color: black !important; font-size: 10pt; }
-            .pf-card { border: none; border-bottom: 1px solid #000; background: white !important; border-radius: 0; padding: 10px 0; }
-            .summary-grid { grid-template-columns: 1fr 1fr; }
-            .summary-item { border: none !important; padding: 5px 0; }
-            .summary-label { color: #000 !important; }
-            .summary-value { color: #000 !important; font-size: 12pt; }
-            .metodo-card { border: none !important; padding: 5px 0; background: transparent !important; }
-            .metodo-monto { color: black !important; font-size: 11pt; }
-            .pf-table { border-collapse: collapse; }
-            .pf-table th { background: #eee !important; color: black !important; border: 1px solid #ddd; }
-            .pf-table td { border-bottom: 1px solid #eee; color: black !important; }
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+            .pf-card { border: none; border-bottom: 2px solid #000; background: white !important; }
+            .summary-value, .metodo-monto { color: black !important; }
             .print-only { display: block !important; }
-            .print-header { text-align: center; margin-bottom: 20px; }
-            .signature-box { margin-top: 50px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; text-align: center; }
-            .signature-line { border-top: 1px solid black; margin-top: 40px; padding-top: 5px; }
+            .signature-box { margin-top: 50px; display: flex; justify-content: space-around; text-align: center; }
+            .sig-line { border-top: 1px solid #000; width: 200px; padding-top: 5px; margin-top: 40px; font-size: 9pt; }
         }
         .print-only { display: none; }
     </style>
@@ -79,116 +71,159 @@
 <body>
 <div layout:fragment="content" class="container-fluid p-4">
 
-    <div class="print-only print-header">
-        <h2 style="margin:0">PUNTO FÁCIL</h2>
-        <h4 style="margin:0">REPORTE DE CIERRE DE CAJA</h4>
-        <p>Fecha: [[${#temporals.format(sesion.fechaApertura, 'dd/MM/yyyy HH:mm')}]]<br>
-            Sesión: #[[${sesion.idSesion}]] | Cajero: [[${sesion.idUsuario ?: 'Admin'}]]</p>
+    <div class="print-only text-center mb-4">
+        <h2 class="mb-0">PUNTO FÁCIL</h2>
+        <h4 class="mb-0">REPORTE DE AUDITORÍA DE CAJA</h4>
+        <p class="small">Sesión: #[[${sesion.idSesion}]] | Apertura: [[${#temporals.format(sesion.fechaApertura, 'dd/MM/yyyy HH:mm')}]]</p>
         <hr>
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <div>
-            <h3 class="fw-bold m-0"><i class="bi bi-file-earmark-bar-graph text-info me-2"></i>Detalle de Auditoría</h3>
-            <p class="text-muted-custom small m-0">Revisión contable de la sesión operativa.</p>
+            <h4 class="fw-bold m-0"><i class="bi bi-shield-check text-primary me-2"></i>Auditoría de Sesión</h4>
+            <p class="text-muted small m-0">Consolidado de ingresos y egresos de caja.</p>
         </div>
         <div class="d-flex gap-2">
             <div th:if="${diferenciaCierre == 0}" class="status-badge status-ok">
-                <i class="bi bi-check-circle-fill me-2"></i> Caja Cuadrada
+                <i class="bi bi-check-all me-1"></i> Caja Cuadrada
             </div>
             <div th:if="${diferenciaCierre != 0}" class="status-badge status-error">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> Diferencia: $[[${#numbers.formatDecimal(diferenciaCierre, 1, 'COMMA', 2, 'POINT')}]]
+                <i class="bi bi-calculator me-1"></i> Diferencia: $[[${#numbers.formatDecimal(diferenciaCierre, 1, 'COMMA', 2, 'POINT')}]]
             </div>
-            <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="window.print()">
-                <i class="bi bi-printer-fill me-2"></i> Imprimir Reporte
+            <button class="btn btn-primary fw-bold" onclick="window.print()">
+                <i class="bi bi-printer me-2"></i> Imprimir
             </button>
         </div>
     </div>
 
     <div class="pf-card">
         <div class="summary-grid">
-            <div class="summary-item" style="border-color: var(--accent-orange)">
-                <span class="summary-label">Monto de Apertura</span>
+            <div class="summary-item" style="border-color: var(--pf-warning)">
+                <span class="summary-label">Apertura (Efectivo)</span>
                 <span class="summary-value">$[[${#numbers.formatDecimal(sesion.montoApertura ?: 0, 1, 'COMMA', 2, 'POINT')}]]</span>
             </div>
-            <div class="summary-item" style="border-color: var(--accent-blue)">
-                <span class="summary-label">Ventas según Sistema</span>
+            <div class="summary-item" style="border-color: var(--pf-primary)">
+                <span class="summary-label">Ventas Totales (+)</span>
                 <span class="summary-value">$[[${#numbers.formatDecimal(totalVentas ?: 0, 1, 'COMMA', 2, 'POINT')}]]</span>
             </div>
-            <div class="summary-item" style="border-color: var(--accent-green)">
-                <span class="summary-label">Efectivo Contado</span>
-                <span class="summary-value">$[[${#numbers.formatDecimal(sesion.montoCierreReal ?: 0, 1, 'COMMA', 2, 'POINT')}]]</span>
+            <div class="summary-item" style="border-color: var(--pf-danger)">
+                <span class="summary-label">Egresos Totales (-)</span>
+                <span class="summary-value text-danger">$[[${#numbers.formatDecimal(totalGastos ?: 0, 1, 'COMMA', 2, 'POINT')}]]</span>
             </div>
-            <div class="summary-item" th:style="'border-color:' + (${diferenciaCierre < 0} ? 'var(--accent-red)' : 'var(--accent-green)')">
-                <span class="summary-label">⚖ Diferencia</span>
-                <span class="summary-value" th:classappend="${diferenciaCierre < 0 ? 'text-danger' : 'text-success'}">
-                    [[${diferenciaCierre >= 0 ? '+' : ''}]]$[[${#numbers.formatDecimal(diferenciaCierre, 1, 'COMMA', 2, 'POINT')}]]
-                </span>
+            <div class="summary-item" style="border-color: var(--pf-success)">
+                <span class="summary-label" title="Calculado por el sistema considerando solo entradas y salidas en efectivo">Efectivo Físico Esperado</span>
+                <span class="summary-value text-success">$[[${#numbers.formatDecimal(montoEsperado ?: 0, 1, 'COMMA', 2, 'POINT')}]]</span>
             </div>
         </div>
     </div>
 
-    <h6 class="text-muted-custom fw-bold mb-3 small text-uppercase"><i class="bi bi-credit-card-2-back me-2"></i>Distribución de Ingresos</h6>
-    <div class="row g-3 mb-4">
-        <div th:each="pago : ${resumenPagos}" th:if="${pago.get('total') > 0}" class="col-6 col-md-3">
-            <div class="metodo-card">
-                <div class="metodo-header" th:classappend="${
-                    pago.get('nombre') == 'EFECTIVO' ? 'text-success' :
-                    (pago.get('nombre') == 'TARJETA' ? 'text-info' : 'text-warning')}">
-                    <i class="bi" th:classappend="${
-                        pago.get('nombre') == 'EFECTIVO' ? 'bi-cash-stack' :
-                        (pago.get('nombre') == 'TARJETA' ? 'bi-credit-card' : 'bi-lightning-charge')}"></i>
-                    <span th:text="${
-                        pago.get('nombre') == 'EFECTIVO' ? 'Efectivo' :
-                        (pago.get('nombre') == 'TARJETA' ? 'Tarjeta' :
-                        (pago.get('nombre') == 'TRANSFERENCIA' ? 'Transferencia' : 'Otros'))}">MÉTODO</span>
+    <div class="row g-4">
+        <div class="col-md-7">
+            <h6 class="text-primary fw-bold mb-3 small"><i class="bi bi-arrow-down-left-circle me-2"></i>INGRESOS POR MÉTODO</h6>
+            <div class="row g-2 mb-4">
+                <div th:each="pago : ${resumenPagos}" th:if="${pago.get('total') > 0}" class="col-6">
+                    <div class="metodo-card">
+                        <div class="metodo-header" th:classappend="${pago.get('nombre') == 'EFECTIVO' ? 'text-success' : 'text-primary'}">
+                            <i class="bi" th:classappend="${pago.get('nombre') == 'EFECTIVO' ? 'bi-cash-coin' : 'bi-credit-card-2-front'}"></i>
+                            <span th:text="${pago.get('nombre')}">MÉTODO</span>
+                        </div>
+                        <div class="metodo-monto">$[[${#numbers.formatDecimal(pago.get('total'), 1, 'COMMA', 2, 'POINT')}]]</div>
+                    </div>
                 </div>
-                <div class="metodo-monto">$[[${#numbers.formatDecimal(pago.get('total'), 1, 'COMMA', 2, 'POINT')}]]</div>
-                <div class="small text-muted-custom">[[${totalVentas > 0 ? #numbers.formatDecimal((pago.get('total') / totalVentas) * 100, 1, 1) : 0}]]% del total</div>
             </div>
-        </div>
-    </div>
 
-    <div class="card bg-transparent border-0">
-        <div class="card-header bg-transparent border-0 p-0 mb-3">
-            <h6 class="text-muted-custom fw-bold small text-uppercase"><i class="bi bi-list-check me-2"></i>Desglose de Operaciones</h6>
-        </div>
-
-        <div th:each="entry : ${detallePorMetodo}" class="mb-3">
-            <div class="bg-dark bg-opacity-25 p-2 px-3 rounded d-flex justify-content-between align-items-center border border-secondary border-opacity-25">
-                <span class="fw-bold text-white small" th:text="${entry.key == 'EFECTIVO' ? 'EFECTIVO' : 'OTROS MÉTODOS'}"></span>
-                <span class="badge bg-primary">[[${#lists.size(entry.value)}]] Movimientos</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-dark table-hover pf-table mb-0">
+            <h6 class="text-primary fw-bold mb-3 small"><i class="bi bi-list-ul me-2"></i>DETALLE DE VENTAS E INGRESOS</h6>
+            <div class="table-responsive pf-card p-0 overflow-hidden">
+                <table class="table table-dark table-hover table-custom mb-0">
                     <thead>
                     <tr>
-                        <th>Nº Ticket</th>
+                        <th>Ref. / Folio</th>
                         <th>Hora</th>
+                        <th>Descripción</th>
                         <th class="text-end">Monto</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="m : ${entry.value}">
-                        <td class="fw-bold">#[[${m.idMovimiento}]]</td>
-                        <td class="text-muted-custom" th:text="${#temporals.format(m.fechaMovimiento,'HH:mm:ss')}"></td>
-                        <td class="text-end fw-bold text-success">$[[${#numbers.formatDecimal(m.monto, 1, 'COMMA', 2, 'POINT')}]]</td>
+                    <tr th:each="v : ${ventasSesion}">
+                        <td class="fw-bold text-info">#[[${v.idReferencia}]]</td>
+                        <td th:text="${#temporals.format(v.fechaMovimiento, 'HH:mm')}"></td>
+                        <td class="small">
+                            <span th:text="${v.descripcion}"></span>
+                            <span class="badge rounded-pill bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 ms-2 px-2 py-1"
+                                  style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;"
+                                  th:text="${v.tipoReferencia}"></span>
+                        </td>
+                        <td class="text-end fw-bold text-success">$[[${#numbers.formatDecimal(v.monto, 1, 'COMMA', 2, 'POINT')}]]</td>
                     </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <div class="col-md-5">
+            <h6 class="text-danger fw-bold mb-3 small"><i class="bi bi-arrow-up-right-circle me-2"></i>EGRESOS Y COMPRAS</h6>
+
+            <div th:if="${#lists.isEmpty(gastosSesion)}" class="pf-card text-center py-4">
+                <p class="text-muted small m-0">No se registraron egresos en esta sesión.</p>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(gastosSesion)}" class="table-responsive pf-card p-0 overflow-hidden">
+                <table class="table table-dark table-hover table-custom mb-0">
+                    <thead>
+                    <tr>
+                        <th>Motivo / Referencia</th>
+                        <th class="text-end">Monto</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="g : ${gastosSesion}">
+                        <td>
+                            <span class="d-block fw-bold text-white mb-1" th:text="${g.descripcion}"></span>
+                            <span class="text-muted small">Ref #[[${g.idReferencia}]]</span>
+                            <span class="badge rounded-pill bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 ms-2 px-2 py-1"
+                                  style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;"
+                                  th:text="${g.tipoReferencia}"></span>
+                        </td>
+                        <td class="text-end fw-bold text-danger">
+                            -$[[${#numbers.formatDecimal(g.monto.abs(), 1, 'COMMA', 2, 'POINT')}]]
+                        </td>
+                    </tr>
+                    </tbody>
+                    <tfoot>
+                    <tr class="bg-black bg-opacity-20">
+                        <td class="fw-bold text-white">TOTAL SALIDAS</td>
+                        <td class="text-end fw-bold text-danger">
+                            -$[[${#numbers.formatDecimal(totalGastos, 1, 'COMMA', 2, 'POINT')}]]
+                        </td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="mt-4 pf-card bg-black bg-opacity-25 border-warning">
+                <h6 class="text-warning fw-bold small mb-3">CUADRE FINAL</h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Efectivo Físico (Entregado por Cajero):</span>
+                    <span class="fw-bold text-white">$[[${#numbers.formatDecimal(sesion.montoCierreReal ?: 0, 1, 'COMMA', 2, 'POINT')}]]</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted small">Diferencia de Caja:</span>
+                    <span th:class="${diferenciaCierre < 0 ? 'text-danger' : 'text-success'} + ' fw-bold'">
+                        [[${diferenciaCierre >= 0 ? '+' : ''}]]$[[${#numbers.formatDecimal(diferenciaCierre, 1, 'COMMA', 2, 'POINT')}]]
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="print-only signature-box">
-        <div class="signature-line">Firma Cajero</div>
-        <div class="signature-line">Firma Supervisor</div>
-    </div>
-
-    <div class="mt-5 p-3 rounded no-print text-center" style="border: 1px dashed var(--border-color);">
-        <p class="m-0 text-muted-custom small">
-            Fin del reporte de auditoría. Generado el [[${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm:ss')}]].
-        </p>
+        <div>
+            <div class="sig-line">ENTREGUÉ (CAJERO)</div>
+            <p class="small">[[${sesion.idUsuario ?: 'Usuario Sistema'}]]</p>
+        </div>
+        <div>
+            <div class="sig-line">RECIBÍ (SUPERVISOR)</div>
+        </div>
     </div>
 
 </div>

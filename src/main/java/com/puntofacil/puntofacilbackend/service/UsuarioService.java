@@ -1,32 +1,50 @@
 package com.puntofacil.puntofacilbackend.service;
 
+import com.puntofacil.puntofacilbackend.entity.Rol;
 import com.puntofacil.puntofacilbackend.entity.Usuario;
+import com.puntofacil.puntofacilbackend.repository.RolRepository;
 import com.puntofacil.puntofacilbackend.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository; // Nueva dependencia para el puente de roles
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    // Constructor actualizado con la nueva dependencia
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          RolRepository rolRepository,
+                          PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     /**
-     * Guarda o actualiza un usuario aplicando lógica de cifrado inteligente.
+     * Guarda o actualiza un usuario aplicando lógica de cifrado inteligente
+     * y sincronización de roles híbrida.
      */
     @Transactional
     public Usuario guardar(Usuario usuario) {
+
+        // --- 1. SINCRONIZACIÓN DE ROL (EL PUENTE) ---
+        // Extraemos el nombre del rol de la tabla maestra para llenar el String 'rol'
+        if (usuario.getRoleRelacional() != null && usuario.getRoleRelacional().getIdRole() != null) {
+            Rol rolDb = rolRepository.findById(usuario.getRoleRelacional().getIdRole())
+                    .orElseThrow(() -> new RuntimeException("El Rol seleccionado no existe"));
+
+            // Llenamos el campo String para no romper la seguridad ni consultas viejas
+            usuario.setRol(rolDb.getNombreRol());
+        }
+
         if (usuario.getIdUsuario() == null) {
-            // --- LÓGICA PARA NUEVO USUARIO ---
+            // --- 2. LÓGICA PARA NUEVO USUARIO ---
             validarUsernameUnico(usuario.getUsername());
 
             if (usuario.getPassword() == null || usuario.getPassword().isEmpty()) {
@@ -34,30 +52,35 @@ public class UsuarioService {
             }
 
             usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+
             // Por defecto, nuevos usuarios están activos
             if (usuario.getActivo() == null) usuario.setActivo(true);
 
         } else {
-            // --- LÓGICA PARA EDICIÓN ---
+            // --- 3. LÓGICA PARA EDICIÓN ---
             Usuario usuarioExistente = usuarioRepository.findById(usuario.getIdUsuario())
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + usuario.getIdUsuario()));
 
-            // Validar si intentan cambiar el username a uno que ya existe (y no es el suyo)
+            // Validar si intentan cambiar el username a uno que ya existe
             if (!usuarioExistente.getUsername().equals(usuario.getUsername())) {
                 validarUsernameUnico(usuario.getUsername());
             }
 
-            // Si el password enviado está vacío, preservamos el actual ya cifrado
+            // Gestión de contraseña en edición
             if (usuario.getPassword() == null || usuario.getPassword().isEmpty()) {
-                usuario.setPassword(usuarioExistente.getPassword());
+                usuario.setPassword(usuarioExistente.getPassword()); // Preservar actual cifrada
             } else {
-                // Si enviaron algo, lo ciframos (cambio de clave)
-                usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+                usuario.setPassword(passwordEncoder.encode(usuario.getPassword())); // Cifrar nueva
             }
 
-            // Mantener el idEmpresa original si no se envió en el objeto
+            // Preservar idEmpresa original si no viene en el objeto
             if (usuario.getIdEmpresa() == null) {
                 usuario.setIdEmpresa(usuarioExistente.getIdEmpresa());
+            }
+
+            // Preservar sucursal si no se cambia en el formulario
+            if (usuario.getSucursal() == null) {
+                usuario.setSucursal(usuarioExistente.getSucursal());
             }
         }
 

@@ -15,9 +15,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Se aplica a todas las rutas (/**) para que la barra siempre esté actualizada
         registry.addInterceptor(cajaInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/css/**", "/js/**", "/img/**"); // No procesar archivos estáticos
+                // Añadimos /login, /logout y /api (si tienes) para que no ejecute consultas a BD innecesarias
+                .excludePathPatterns("/css/**", "/js/**", "/img/**", "/login", "/logout", "/api/**");
     }
 }
