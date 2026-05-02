@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Reporte de Ventas Mensual</title>
+    <style>
+        @page { size: A4 landscape; margin: 15mm; } /* landscape para que quepan bien las columnas */
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #111827; font-size: 10px; margin: 0; }
+
+        /* Layout principal usando Tablas para compatibilidad PDF */
+        table { width: 100%; border-collapse: collapse; }
+
+        /* Cabecera Principal */
+        .header-table { margin-bottom: 15px; border-bottom: 2px solid #0B2240; padding-bottom: 10px; }
+        .logo-box h1 { margin: 0; color: #0B2240; font-size: 24px; letter-spacing: -1px; }
+        .logo-box p { margin: 2px 0; font-size: 9px; color: #4B5563; }
+        .title-box { text-align: right; }
+        .title-box h2 { margin: 0; color: #0B2240; font-size: 20px; text-transform: uppercase; }
+        .title-box p { margin: 2px 0; font-size: 10px; color: #4B5563; font-weight: bold; }
+
+        /* Cajas de Información (Empresa, Sucursal) */
+        .info-table { margin-bottom: 20px; border: 1px solid #D1D5DB; background-color: #F9FAFB; }
+        .info-table td { padding: 8px 12px; border-right: 1px solid #D1D5DB; vertical-align: middle; }
+        .info-table td:last-child { border-right: none; }
+        .info-title { font-size: 9px; color: #6B7280; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; display: block;}
+        .info-value { font-size: 11px; color: #111827; font-weight: bold; }
+
+        /* Tabla de Datos */
+        .data-table th { background-color: #0B2240; color: #FFFFFF; padding: 8px 5px; text-align: center; font-size: 9px; border: 1px solid #0B2240; }
+        .data-table td { padding: 6px 5px; border: 1px solid #E5E7EB; text-align: center; }
+        .data-table tbody tr:nth-child(even) { background-color: #F9FAFB; }
+
+        /* Utilidades */
+        .text-left { text-align: left !important; }
+        .text-right { text-align: right !important; }
+        .text-danger { color: #DC2626 !important; font-weight: bold; }
+
+        /* Footer y Totales */
+        .footer-table { margin-top: 15px; }
+        .obs-box { border: 1px solid #D1D5DB; padding: 10px; background-color: #F9FAFB; height: 100%; }
+        .obs-box strong { font-size: 10px; }
+
+        .totales-box table { width: 100%; border-collapse: collapse; }
+        .totales-box td { padding: 8px; border: 1px solid #FFFFFF; font-size: 11px; font-weight: bold; }
+        .totales-label { background-color: #0B2240; color: white; width: 60%; }
+        .totales-value { background-color: #F3F4F6; color: #111827; text-align: right; width: 40%; border: 1px solid #D1D5DB !important;}
+
+        /* Pie de página final */
+        .page-footer { margin-top: 30px; text-align: center; font-size: 9px; color: #6B7280; border-top: 1px solid #E5E7EB; padding-top: 10px; font-style: italic;}
+    </style>
+</head>
+<body>
+
+<table class="header-table">
+    <tr>
+        <td class="logo-box" style="width: 50%;">
+            <h1>Punto Fácil</h1>
+            <p>Sistema de Gestión POS</p>
+            <br/>
+            <p><strong>RUC:</strong> 1234567890123</p>
+            <p><strong>Dirección:</strong> Av. Principal 1234 - Ciudad</p>
+            <p><strong>Teléfono:</strong> (021) 123 456</p>
+        </td>
+        <td class="title-box" style="width: 50%; vertical-align: top;">
+            <h2>REPORTE DE VENTAS MENSUAL</h2>
+            <p>Período: <span th:text="${inicio} + ' al ' + ${fin}"></span></p>
+            <p style="font-weight: normal;">Fecha de generación: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span></p>
+        </td>
+    </tr>
+</table>
+
+<table class="info-table">
+    <tr>
+        <td style="width: 33%;">
+            <span class="info-title">Empresa:</span>
+            <span class="info-value">EMPRESA DEMO S.A.</span>
+        </td>
+        <td style="width: 33%;">
+            <span class="info-title">Sucursal:</span>
+            <span class="info-value">SUCURSAL PRINCIPAL</span>
+        </td>
+        <td style="width: 34%;">
+            <span class="info-title">Estado:</span>
+            <span class="info-value">COMPLETADA</span>
+        </td>
+    </tr>
+</table>
+
+<table class="data-table">
+    <thead>
+    <tr>
+        <th>FECHA</th>
+        <th>N° DOCUMENTO</th>
+        <th class="text-left">CLIENTE</th>
+        <th>TIPO DOC.</th>
+        <th>FORMA DE PAGO</th>
+        <th class="text-right">TOTAL VENDIDO (Uds.)</th>
+        <th class="text-right">TOTAL VENTAS ($)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${data}">
+        <td th:text="${item.fecha_venta}"></td>
+        <td th:text="${item.numero_documento}"></td>
+        <td class="text-left" th:text="${item.cliente}"></td>
+
+        <td th:classappend="${item.tipo_doc == 'NOTA DE CRÉDITO' ? 'text-danger' : ''}"
+            th:text="${item.tipo_doc}"></td>
+
+        <td th:text="${item.forma_pago}"></td>
+
+        <td class="text-right"
+            th:classappend="${((item.total_vendido + 0.0) < 0) ? 'text-danger' : ''}"
+            th:text="${item.total_vendido}"></td>
+
+        <td class="text-right"
+            th:classappend="${((item.total_ventas + 0.0) < 0) ? 'text-danger' : ''}"
+            th:text="${#numbers.formatDecimal(item.total_ventas, 1, 'COMMA', 2, 'POINT')}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<table class="footer-table">
+    <tr>
+        <td style="width: 65%; vertical-align: top; padding-right: 20px;">
+            <div class="obs-box">
+                <strong>Observaciones:</strong><br/>
+                <p style="margin: 3px 0; color: #4B5563;">Reporte generado automáticamente desde el sistema Punto Fácil.<br/>
+                    Incluye ventas y notas de crédito del período seleccionado.</p>
+            </div>
+        </td>
+        <td style="width: 35%; vertical-align: top;" class="totales-box">
+            <table>
+                <tr>
+                    <td class="totales-label">TOTAL VENDIDO (Uds.)</td>
+                    <td class="totales-value" th:text="${totalVendido}">0</td>
+                </tr>
+                <tr>
+                    <td class="totales-label">TOTAL VENTAS ($)</td>
+                    <td class="totales-value" th:text="${#numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div class="page-footer">
+    <strong>Gracias por su preferencia</strong><br/>
+    Este documento es de carácter informativo y administrativo.
+</div>
+
+</body>
+</html>

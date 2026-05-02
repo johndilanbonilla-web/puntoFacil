@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Imprimir - Ventas por Producto</title>
+    <style>
+        /* Formato horizontal igual que el PDF */
+        @page { size: A4 landscape; margin: 15mm; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #111827; font-size: 11px; margin: 0; padding: 20px; background: white; }
+
+        .header-table { width: 100%; border-bottom: 2px solid #0B2240; padding-bottom: 10px; margin-bottom: 20px; border-collapse: collapse;}
+        .logo-box h1 { margin: 0; color: #0B2240; font-size: 26px; }
+        .title-box { text-align: right; }
+        .title-box h2 { margin: 0; color: #0B2240; font-size: 20px; }
+
+        .info-grid { display: flex; justify-content: space-between; background-color: #F9FAFB; border: 1px solid #D1D5DB; margin-bottom: 20px; }
+        .info-item { padding: 10px; border-right: 1px solid #D1D5DB; flex: 1; }
+        .info-item:last-child { border-right: none; }
+        .info-label { font-size: 10px; color: #6B7280; font-weight: bold; text-transform: uppercase; display: block; }
+        .info-value { font-size: 12px; font-weight: bold; color: #111827; }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .data-table th { background-color: #0B2240; color: white; padding: 8px; text-align: center; }
+        .data-table td { padding: 8px; border: 1px solid #E5E7EB; text-align: center; }
+        .data-table tr:nth-child(even) { background-color: #F9FAFB; }
+
+        .summary-box { width: 250px; border-collapse: collapse; float: right; }
+        .summary-label { background-color: #0B2240; color: white; padding: 10px; font-weight: bold; text-align: center; border: 1px solid #0B2240;}
+        .summary-value { background-color: #FFFFFF; padding: 10px; text-align: center; font-weight: bold; border: 1px solid #D1D5DB; }
+
+        @media print {
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<table class="header-table">
+    <tr>
+        <td class="logo-box" style="width: 50%;">
+            <h1>Punto Fácil</h1>
+            <p style="margin: 0;">Sistema de Gestión POS<br>RUC: 1234567890123</p>
+        </td>
+        <td class="title-box" style="width: 50%;">
+            <h2>REPORTE DE VENTAS POR PRODUCTO</h2>
+            <p style="margin: 0;">Rango Evaluado: <span th:text="${inicio} + ' al ' + ${fin}"></span><br>
+                Generado el: <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span></p>
+        </td>
+    </tr>
+</table>
+
+<div class="info-grid">
+    <div class="info-item"><span class="info-label">Empresa</span><span class="info-value">EMPRESA DEMO S.A.</span></div>
+    <div class="info-item"><span class="info-label">Sucursal</span><span class="info-value">SUCURSAL PRINCIPAL</span></div>
+    <div class="info-item"><span class="info-label">Estado</span><span class="info-value">COMPLETADA</span></div>
+</div>
+
+<table class="data-table">
+    <thead>
+    <tr>
+        <th style="width: 5%;">N°</th>
+        <th style="width: 15%;">FECHA</th>
+        <th style="width: 15%;">TIPO DOC.</th>
+        <th style="width: 10%;">N° DOC.</th>
+        <th style="text-align: left; width: 35%;">PRODUCTO</th>
+        <th style="width: 10%;">CANTIDAD</th>
+        <th style="width: 10%;">TOTAL ($)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item, iterStat : ${data}">
+        <td th:text="${iterStat.count}"></td>
+        <td th:text="${item.fecha_venta}"></td>
+        <td th:text="${item.tipo_documento}"></td>
+        <td th:text="${item.numero_documento}"></td>
+        <td style="text-align: left;" th:text="${item.producto}"></td>
+        <td th:text="${item.total_vendido}"></td>
+        <td th:text="${#numbers.formatDecimal(item.total_ventas, 1, 'COMMA', 2, 'POINT')}"></td>
+    </tr>
+    <tr th:if="${#lists.isEmpty(data)}">
+        <td colspan="7" style="padding: 20px; color: #6B7280;">No hay datos para el rango seleccionado.</td>
+    </tr>
+    </tbody>
+</table>
+
+<table style="width: 100%; margin-top: 20px;">
+    <tr>
+        <td style="width: 60%; vertical-align: top;">
+            <div style="border: 1px solid #D1D5DB; padding: 10px; background-color: #F9FAFB;">
+                <strong>Observaciones:</strong><br>
+                <span style="color: #4B5563; font-size: 10px;">Reporte generado automáticamente desde el sistema Punto Fácil.<br>Incluye ventas por producto del rango seleccionado.</span>
+            </div>
+        </td>
+        <td style="width: 40%; vertical-align: top;">
+            <table class="summary-box">
+                <tr>
+                    <td class="summary-label">TOTAL GENERAL ($)</td>
+                    <td class="summary-value" th:text="${#numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<script>
+    // Disparar diálogo de impresión al cargar la página
+    window.onload = function() {
+        window.print();
+    };
+</script>
+</body>
+</html>

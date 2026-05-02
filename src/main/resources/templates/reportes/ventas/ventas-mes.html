@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head>
+    <title>Ventas por Mes y Detalle</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media (max-width: 767.98px) {
+            .table-responsive { overflow-x: visible; }
+            .table-mobile-cards thead { display: none; }
+            .table-mobile-cards tbody tr { display: block; margin-bottom: 1rem; background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; }
+            .table-mobile-cards tbody td { display: flex; justify-content: space-between; padding: 0.75rem 1rem !important; border-bottom: 1px solid #374151; text-align: right !important; }
+            .table-mobile-cards tbody td:last-child { border-bottom: none; }
+            .table-mobile-cards tbody td::before { content: attr(data-label); font-weight: 600; color: #9ca3af; margin-right: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-white mb-1">
+                <i class="bi bi-bar-chart-fill text-success"></i> Ventas Mensuales
+            </h3>
+            <small class="text-secondary">Análisis gráfico y detalle documental</small>
+        </div>
+
+        <div class="btn-group shadow-sm">
+            <a th:href="@{/reportes/ventas/mes/vista(inicio=${inicio}, fin=${fin})}" target="_blank" class="btn btn-outline-info">
+                <i class="bi bi-printer-fill"></i> <span class="d-none d-sm-inline">Imprimir Vista</span>
+            </a>
+            <a th:href="@{/reportes/ventas/mes/pdf(inicio=${inicio}, fin=${fin})}" target="_blank" class="btn btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf-fill"></i> <span class="d-none d-sm-inline">PDF</span>
+            </a>
+            <a th:href="@{/reportes/ventas/mes/excel(inicio=${inicio}, fin=${fin})}" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel-fill"></i> <span class="d-none d-sm-inline">Excel</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-0 shadow mb-4">
+        <div class="card-body">
+            <form th:action="@{/reportes/ventas/mes}" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label text-secondary">Fecha Inicio</label>
+                    <input type="date" name="inicio" th:value="${inicio}" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-secondary">Fecha Fin</label>
+                    <input type="date" name="fin" th:value="${fin}" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Consultar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-3 mb-lg-0">
+            <div class="card bg-dark border-0 shadow h-100">
+                <div class="card-body">
+                    <h6 class="text-secondary fw-bold mb-3">Tendencia Mensual</h6>
+                    <div style="height: 300px; width: 100%;"><canvas id="graficaVentas"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card bg-dark border-0 shadow h-100 d-flex justify-content-center align-items-center text-center p-4">
+                <div class="card-body">
+                    <i class="bi bi-cash-coin text-success display-4 mb-3 d-block"></i>
+                    <h5 class="text-secondary">Ventas Totales</h5>
+                    <h2 class="fw-bold text-white m-0" th:text="${totalVentas != null ? '$' + #numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT') : '$0.00'}">$0.00</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-0 shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0 table-mobile-cards">
+                    <thead class="table-active">
+                    <tr>
+                        <th class="ps-3">Fecha</th><th>Documento</th><th>Cliente</th><th>Tipo Doc.</th><th>Pago</th><th class="text-end pe-3">Total ($)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${dataDetalle}">
+                        <td data-label="Fecha" class="ps-md-3" th:text="${item.fecha_venta}"></td>
+                        <td data-label="Documento" th:text="${item.numero_documento}"></td>
+                        <td data-label="Cliente" th:text="${item.cliente}"></td>
+                        <td data-label="Tipo Doc." th:text="${item.tipo_doc}"></td>
+                        <td data-label="Pago"><span class="badge bg-secondary" th:text="${item.forma_pago}"></span></td>
+                        <td data-label="Total ($)" class="text-md-end pe-md-3 font-monospace" th:classappend="${item.total_ventas < 0} ? 'text-danger' : 'text-success'" th:text="${'$' + #numbers.formatDecimal(item.total_ventas, 1, 'COMMA', 2, 'POINT')}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(dataDetalle)}"><td colspan="6" class="text-center text-secondary py-4">No hay datos.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:inline="javascript">
+        const rawData = /*[[${dataGrafica}]]*/ [];
+        const labels = rawData.map(item => item.mes);
+        const dataValues = rawData.map(item => item.total_ventas);
+        const ctx = document.getElementById('graficaVentas').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Ventas ($)', data: dataValues, backgroundColor: 'rgba(34, 197, 94, 0.6)', borderColor: 'rgba(34, 197, 94, 1)', borderWidth: 1, borderRadius: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }, x: { ticks: { color: '#9ca3af' }, grid: { display: false } } } }
+        });
+    </script>
+</th:block>
+</body>
+</html>

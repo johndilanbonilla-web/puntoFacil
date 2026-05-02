@@ -23,6 +23,9 @@
 		<lombok.version>1.18.30</lombok.version>
 		<opencsv.version>5.9</opencsv.version>
 		<thymeleaf-extras-java8time.version>3.0.4.RELEASE</thymeleaf-extras-java8time.version>
+		<poi.version>5.2.5</poi.version>
+		<openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+		<jsoup.version>1.17.2</jsoup.version>
 	</properties>
 
 	<dependencies>
@@ -80,6 +83,23 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-pdfbox</artifactId>
+			<version>${openhtmltopdf.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>${jsoup.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>

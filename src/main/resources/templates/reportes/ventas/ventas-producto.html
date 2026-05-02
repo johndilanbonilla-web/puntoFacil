@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head>
+    <title>Ventas por Producto</title>
+    <style>
+        @media (max-width: 767.98px) {
+            .table-responsive { overflow-x: visible; }
+            .table-mobile-cards thead { display: none; }
+            .table-mobile-cards tbody tr { display: block; margin-bottom: 1rem; background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+            .table-mobile-cards tbody td { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem !important; border-bottom: 1px solid #374151; text-align: right !important; }
+            .table-mobile-cards tbody td:last-child { border-bottom: none; }
+            .table-mobile-cards tbody td::before { content: attr(data-label); font-weight: 600; color: #9ca3af; text-align: left; margin-right: 1rem; }
+            .table-mobile-cards tbody td.empty-message { display: block; text-align: center !important; }
+            .table-mobile-cards tbody td.empty-message::before { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div layout:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-white mb-1">
+                <i class="bi bi-box-seam text-success"></i> Ventas por Producto
+            </h3>
+            <small class="text-secondary">Análisis detallado de ventas</small>
+        </div>
+
+        <div class="btn-group shadow-sm">
+            <a th:href="@{/reportes/ventas/producto/vista(inicio=${inicio}, fin=${fin})}" target="_blank" class="btn btn-outline-info">
+                <i class="bi bi-printer-fill"></i> <span class="d-none d-sm-inline">Imprimir Vista</span>
+            </a>
+            <a th:href="@{/reportes/ventas/producto/pdf(inicio=${inicio}, fin=${fin})}" target="_blank" class="btn btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf-fill"></i> <span class="d-none d-sm-inline">PDF</span>
+            </a>
+            <a th:href="@{/reportes/ventas/producto/excel(inicio=${inicio}, fin=${fin})}" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel-fill"></i> <span class="d-none d-sm-inline">Excel</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-0 shadow mb-4">
+        <div class="card-body">
+            <form th:action="@{/reportes/ventas/producto}" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label text-secondary">Fecha Inicio</label>
+                    <input type="date" name="inicio" th:value="${inicio}" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-secondary">Fecha Fin</label>
+                    <input type="date" name="fin" th:value="${fin}" class="form-control bg-dark text-white border-secondary" required>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Consultar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3 mb-md-0">
+            <div class="card bg-dark border-0 shadow h-100">
+                <div class="card-body">
+                    <small class="text-secondary">Total Ventas</small>
+                    <h4 class="fw-bold text-success mb-0" th:text="${totalVentas != null ? '$' + #numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT') : '$0.00'}">$0.00</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-dark border-0 shadow h-100">
+                <div class="card-body">
+                    <small class="text-secondary">Productos Vendidos</small>
+                    <h4 class="fw-bold text-info mb-0" th:text="${totalCantidad != null ? totalCantidad : '0'}">0</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-0 shadow">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0 table-mobile-cards">
+                    <thead class="table-active">
+                    <tr>
+                        <th class="ps-3">Fecha</th><th>Tipo Doc.</th><th>N° Documento</th><th>Producto</th><th class="text-center">Cantidad</th><th class="text-end pe-3">Total ($)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${data}">
+                        <td data-label="Fecha" class="ps-md-3" th:text="${item.fecha_venta}"></td>
+                        <td data-label="Tipo Doc." th:text="${item.tipo_documento}"></td>
+                        <td data-label="N° Documento" th:text="${item.numero_documento}"></td>
+                        <td data-label="Producto" th:text="${item.producto}"></td>
+                        <td data-label="Cantidad" class="text-md-center" th:text="${item.total_vendido}"></td>
+                        <td data-label="Total ($)" class="text-md-end pe-md-3 font-monospace text-success" th:text="${'$' + #numbers.formatDecimal(item.total_ventas, 1, 'COMMA', 2, 'POINT')}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(data)}">
+                        <td colspan="6" class="text-center text-secondary py-4 empty-message"><i class="bi bi-inbox fs-2 d-block mb-2"></i>No hay datos para el rango de fechas seleccionado.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block layout:fragment="scripts"></th:block>
+
+</body>
+</html>
